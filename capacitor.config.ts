@@ -1,9 +1,9 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.example.app',
+  appId: 'com.astrosattwa.app',
   appName: 'Astrosattwa',
-  webDir: 'build'
+  webDir: 'dist'
 };
 
 export default config;
