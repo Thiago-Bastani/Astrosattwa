@@ -3,6 +3,7 @@ import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from '@ionic/rea
 import BirthDataForm from '../components/BirthDataForm';
 import MandalaChart from '../components/MandalaChart';
 import PlanetList from '../components/PlanetList';
+import AspectGrid from '../components/AspectGrid';
 import { calculateChart } from '../services/astroCalculator';
 import type { GeoLocation } from '../types/astro';
 import './MandalaPage.css';
@@ -35,6 +36,7 @@ const MandalaPage: React.FC = () => {
         />
         <MandalaChart data={chartData} />
         <PlanetList planets={chartData.planets} />
+        <AspectGrid planets={chartData.planets} />
       </IonContent>
     </IonPage>
   );
