@@ -21,6 +21,19 @@ function toTimeString(d: Date): string {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+function parseDateInput(value: string): Date | null {
+  if (!value) return null;
+  
+  // Formato ISO (yyyy-mm-dd)
+  const [y, m, d] = value.split('-').map(Number);
+  if (y >= 1900 && y <= 2100 && m >= 1 && m <= 12 && d >= 1 && d <= 31) {
+    const date = new Date(y, m - 1, d);
+    if (!isNaN(date.getTime())) return date;
+  }
+  
+  return null;
+}
+
 const BirthDataForm: React.FC<BirthDataFormProps> = ({ date, location, onDateChange, onLocationChange }) => {
   const adjustDate = (days: number) => {
     const d = new Date(date);
@@ -42,10 +55,16 @@ const BirthDataForm: React.FC<BirthDataFormProps> = ({ date, location, onDateCha
 
   const handleDateInput = (value: string | undefined) => {
     if (!value) return;
-    const [y, m, d] = value.split('-').map(Number);
-    const next = new Date(date);
-    next.setFullYear(y, m - 1, d);
-    if (!isNaN(next.getTime())) onDateChange(next);
+    
+    const parsedDate = parseDateInput(value);
+    if (parsedDate) {
+      // Preserva hora e minuto da data atual
+      const newDate = new Date(date);
+      newDate.setFullYear(parsedDate.getFullYear());
+      newDate.setMonth(parsedDate.getMonth());
+      newDate.setDate(parsedDate.getDate());
+      onDateChange(newDate);
+    }
   };
 
   const handleTimeInput = (value: string | undefined) => {

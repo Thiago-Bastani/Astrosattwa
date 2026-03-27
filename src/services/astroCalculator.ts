@@ -52,10 +52,10 @@ function calculateAngles(date: Date, location: GeoLocation): { ascendant: number
   // atan2 handles quadrant correctly without extra correction
   const mc = normalizeDeg(Math.atan2(Math.sin(ramcRad), Math.cos(ramcRad) * Math.cos(oblRad)) / DEG);
 
-  // ASC (Ascendente)
-  // tan(ASC) = -cos(RAMC) / (sin(RAMC)*cos(obl) + tan(lat)*sin(obl))
-  const y = -Math.cos(ramcRad);
-  const x = Math.sin(ramcRad) * Math.cos(oblRad) + Math.tan(latRad) * Math.sin(oblRad);
+  // ASC (Ascendente) - Meeus, Astronomical Algorithms
+  // tan(ASC) = cos(RAMC) / -(sin(RAMC)*cos(obl) + tan(lat)*sin(obl))
+  const y = Math.cos(ramcRad);
+  const x = -(Math.sin(ramcRad) * Math.cos(oblRad) + Math.tan(latRad) * Math.sin(oblRad));
   const asc = normalizeDeg(Math.atan2(y, x) / DEG);
 
   return { ascendant: asc, mc };
@@ -79,7 +79,7 @@ export function calculateChart(date: Date, location: GeoLocation): ChartData {
   const descendant = normalizeDeg(ascendant + 180);
   const ic = normalizeDeg(mc + 180);
 
-  // Equal House: casa 1 comeca exatamente no ascendente, cada casa = 30 graus
+  // Equal House: casa 1 comeca no ascendente, casas vao em longitude decrescente
   const houseCusps = Array.from({ length: 12 }, (_, i) => normalizeDeg(ascendant + i * 30));
 
   return { planets, houseCusps, ascendant, mc, descendant, ic };

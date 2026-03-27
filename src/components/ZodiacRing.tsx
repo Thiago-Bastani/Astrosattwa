@@ -22,11 +22,11 @@ function describeArc(cx: number, cy: number, r: number, startAngle: number, endA
     y: cy - r * Math.sin(endAngle),
   };
   const largeArc = Math.abs(endAngle - startAngle) > Math.PI ? 1 : 0;
-  return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArc} 1 ${end.x} ${end.y}`;
+  return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArc} 0 ${end.x} ${end.y}`;
 }
 
 function toSvgAngle(longitude: number, ascendant: number): number {
-  return (180 + ascendant - longitude) * DEG;
+  return (180 + longitude - ascendant) * DEG;
 }
 
 const ZodiacRing: React.FC<ZodiacRingProps> = ({ cx, cy, outerRadius, innerRadius, ascendant }) => {

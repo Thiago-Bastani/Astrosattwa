@@ -24,7 +24,7 @@ const PLANET_COLORS: Record<string, string> = {
 };
 
 const PlanetMarker: React.FC<PlanetMarkerProps> = ({ planet, cx, cy, radius, ascendant, offsetRadius = 0 }) => {
-  const svgAngle = ((180 + ascendant - planet.longitude) * Math.PI) / 180;
+  const svgAngle = ((180 + planet.longitude - ascendant) * Math.PI) / 180;
   const r = radius + offsetRadius;
   const x = cx + r * Math.cos(svgAngle);
   const y = cy - r * Math.sin(svgAngle);

@@ -12,7 +12,7 @@ interface HouseGridProps {
 const DEG = Math.PI / 180;
 
 function toSvgAngle(longitude: number, ascendant: number): number {
-  return (180 + ascendant - longitude) * DEG;
+  return (180 + longitude - ascendant) * DEG;
 }
 
 interface CardinalPointDef {
