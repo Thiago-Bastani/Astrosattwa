@@ -15,40 +15,50 @@ const PLANET_BODIES: { name: string; body: string }[] = [
   { name: 'Pluto',   body: 'Pluto' },
 ];
 
+const DEG = Math.PI / 180;
+
 function getPlanetLongitude(bodyName: string, date: Date): number {
   const time = Astronomy.MakeTime(date);
 
   if (bodyName === 'Sun') {
-    const sunPos = Astronomy.SunPosition(time);
-    return sunPos.elon;
+    return Astronomy.SunPosition(time).elon;
   }
 
   if (bodyName === 'Moon') {
-    const moonPos = Astronomy.EclipticGeoMoon(time);
-    return moonPos.lon;
+    return Astronomy.EclipticGeoMoon(time).lon;
   }
 
   const geo = Astronomy.GeoVector(bodyName as Astronomy.Body, time, true);
-  const ecl = Astronomy.Ecliptic(geo);
-  return ecl.elon;
+  return Astronomy.Ecliptic(geo).elon;
 }
 
-function calculateAscendant(date: Date, location: GeoLocation): number {
+function normalizeDeg(d: number): number {
+  return ((d % 360) + 360) % 360;
+}
+
+function calculateAngles(date: Date, location: GeoLocation): { ascendant: number; mc: number } {
   const time = Astronomy.MakeTime(date);
   const gst = Astronomy.SiderealTime(time);
-  const lst = (gst + location.lon / 15 + 24) % 24;
+  const lst = ((gst + location.lon / 15) % 24 + 24) % 24;
   const ramcDeg = lst * 15;
-  const ramcRad = (ramcDeg * Math.PI) / 180;
-  const obliquity = 23.4393;
-  const oblRad = (obliquity * Math.PI) / 180;
-  const latRad = (location.lat * Math.PI) / 180;
+  const ramcRad = ramcDeg * DEG;
 
+  const obliquity = 23.4393;
+  const oblRad = obliquity * DEG;
+  const latRad = location.lat * DEG;
+
+  // MC (Meio do Ceu): ecliptic longitude of the meridian
+  // tan(MC) = tan(RAMC) / cos(obliquity)
+  // atan2 handles quadrant correctly without extra correction
+  const mc = normalizeDeg(Math.atan2(Math.sin(ramcRad), Math.cos(ramcRad) * Math.cos(oblRad)) / DEG);
+
+  // ASC (Ascendente)
+  // tan(ASC) = -cos(RAMC) / (sin(RAMC)*cos(obl) + tan(lat)*sin(obl))
   const y = -Math.cos(ramcRad);
   const x = Math.sin(ramcRad) * Math.cos(oblRad) + Math.tan(latRad) * Math.sin(oblRad);
-  let asc = (Math.atan2(y, x) * 180) / Math.PI;
+  const asc = normalizeDeg(Math.atan2(y, x) / DEG);
 
-  asc = ((asc % 360) + 360) % 360;
-  return asc;
+  return { ascendant: asc, mc };
 }
 
 export function calculateChart(date: Date, location: GeoLocation): ChartData {
@@ -65,8 +75,12 @@ export function calculateChart(date: Date, location: GeoLocation): ChartData {
     };
   });
 
-  const ascendant = calculateAscendant(date, location);
-  const houseCusps = Array.from({ length: 12 }, (_, i) => (ascendant + i * 30) % 360);
+  const { ascendant, mc } = calculateAngles(date, location);
+  const descendant = normalizeDeg(ascendant + 180);
+  const ic = normalizeDeg(mc + 180);
 
-  return { planets, houseCusps, ascendant };
+  // Equal House: casa 1 comeca exatamente no ascendente, cada casa = 30 graus
+  const houseCusps = Array.from({ length: 12 }, (_, i) => normalizeDeg(ascendant + i * 30));
+
+  return { planets, houseCusps, ascendant, mc, descendant, ic };
 }

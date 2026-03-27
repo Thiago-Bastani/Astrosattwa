@@ -17,4 +17,7 @@ export interface ChartData {
   planets: PlanetPosition[];
   houseCusps: number[];
   ascendant: number;
+  mc: number;
+  descendant: number;
+  ic: number;
 }

@@ -22,7 +22,7 @@ const MandalaPage: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar color="dark">
+        <IonToolbar style={{ '--background': '#000000', '--color': '#c9a84c' }}>
           <IonTitle className="mandala-title">Astrosattwa</IonTitle>
         </IonToolbar>
       </IonHeader>
