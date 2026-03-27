@@ -1,2 +1,22 @@
-/* For information on how to create your own theme, please refer to:
-http://ionicframework.com/docs/theming/ */
+/* Astrosattwa Theme */
+
+:root {
+  --ion-color-primary: #c9a84c;
+  --ion-color-primary-rgb: 201, 168, 76;
+  --ion-color-primary-contrast: #000000;
+  --ion-color-primary-contrast-rgb: 0, 0, 0;
+  --ion-color-primary-shade: #b19443;
+  --ion-color-primary-tint: #ceb15e;
+
+  --ion-background-color: #0a0a2e;
+  --ion-background-color-rgb: 10, 10, 46;
+
+  --ion-text-color: #ecf0f1;
+  --ion-text-color-rgb: 236, 240, 241;
+
+  --ion-toolbar-background: #0d0d3a;
+  --ion-toolbar-color: #c9a84c;
+
+  --ion-item-background: transparent;
+  --ion-card-background: rgba(255, 255, 255, 0.05);
+}

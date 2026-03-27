@@ -1,0 +1,9 @@
+.mandala-title {
+  font-family: 'Georgia', serif;
+  letter-spacing: 2px;
+  color: #c9a84c;
+}
+
+.mandala-content {
+  --background: #0a0a2e;
+}
