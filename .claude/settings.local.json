@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /c/Users/thiag/Desktop/\"Nova pasta \\(2\\)\"/Astrosattwa -type f -name \"*.json\")",
+      "Bash(ls -la /c/Users/thiag/Desktop/\"Nova pasta \\(2\\)\"/Astrosattwa/)",
+      "Bash(ls:*)",
+      "Bash(find /c/Users/thiag/Desktop/\"Nova pasta \\(2\\)\"/Astrosattwa/src -type f \\\\\\( -name \"*.tsx\" -o -name \"*.ts\" \\\\\\))",
+      "Bash(find /c/Users/thiag/Desktop/\"Nova pasta \\(2\\)\"/Astrosattwa/src -type f -name \"*.css\")",
+      "Bash(find:*)",
+      "Bash(cat:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx vite:*)"
+    ]
+  }
+}

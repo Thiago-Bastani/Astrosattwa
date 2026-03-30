@@ -1,7 +1,11 @@
-import React from 'react';
-import { IonItem, IonLabel, IonInput, IonGrid, IonRow, IonCol, IonButton, IonIcon } from '@ionic/react';
-import { chevronBack, chevronForward } from 'ionicons/icons';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
+import { IonItem, IonLabel, IonInput, IonGrid, IonRow, IonCol, IonButton, IonIcon, IonSpinner } from '@ionic/react';
+import { chevronBack, chevronForward, searchOutline } from 'ionicons/icons';
 import type { GeoLocation } from '../types/astro';
+import { searchLocation } from '../services/geocodingService';
+import type { NominatimResult } from '../types/astro';
+import { getCurrentTattwa } from '../utils/tattwa';
+import TattwaIndicator from './TattwaIndicator';
 import './BirthDataForm.css';
 
 interface BirthDataFormProps {
@@ -23,18 +27,23 @@ function toTimeString(d: Date): string {
 
 function parseDateInput(value: string): Date | null {
   if (!value) return null;
-  
-  // Formato ISO (yyyy-mm-dd)
   const [y, m, d] = value.split('-').map(Number);
   if (y >= 1900 && y <= 2100 && m >= 1 && m <= 12 && d >= 1 && d <= 31) {
     const date = new Date(y, m - 1, d);
     if (!isNaN(date.getTime())) return date;
   }
-  
   return null;
 }
 
 const BirthDataForm: React.FC<BirthDataFormProps> = ({ date, location, onDateChange, onLocationChange }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<NominatimResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const tattwa = useMemo(() => getCurrentTattwa(date, location), [date, location]);
+
   const adjustDate = (days: number) => {
     const d = new Date(date);
     d.setDate(d.getDate() + days);
@@ -55,10 +64,8 @@ const BirthDataForm: React.FC<BirthDataFormProps> = ({ date, location, onDateCha
 
   const handleDateInput = (value: string | undefined) => {
     if (!value) return;
-    
     const parsedDate = parseDateInput(value);
     if (parsedDate) {
-      // Preserva hora e minuto da data atual
       const newDate = new Date(date);
       newDate.setFullYear(parsedDate.getFullYear());
       newDate.setMonth(parsedDate.getMonth());
@@ -75,16 +82,34 @@ const BirthDataForm: React.FC<BirthDataFormProps> = ({ date, location, onDateCha
     if (!isNaN(next.getTime())) onDateChange(next);
   };
 
-  const handleLatChange = (value: string | undefined) => {
-    if (!value) return;
-    const lat = parseFloat(value);
-    if (!isNaN(lat) && lat >= -90 && lat <= 90) onLocationChange({ ...location, lat });
+  const doSearch = useCallback(async (query: string) => {
+    if (query.trim().length < 2) {
+      setSearchResults([]);
+      setShowResults(false);
+      return;
+    }
+    setIsSearching(true);
+    const results = await searchLocation(query);
+    setSearchResults(results);
+    setShowResults(results.length > 0);
+    setIsSearching(false);
+  }, []);
+
+  const handleSearchInput = (value: string) => {
+    setSearchQuery(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => doSearch(value), 500);
   };
 
-  const handleLonChange = (value: string | undefined) => {
-    if (!value) return;
-    const lon = parseFloat(value);
-    if (!isNaN(lon) && lon >= -180 && lon <= 180) onLocationChange({ ...location, lon });
+  const selectLocation = (result: NominatimResult) => {
+    onLocationChange({
+      lat: parseFloat(result.lat),
+      lon: parseFloat(result.lon),
+      name: result.display_name,
+    });
+    setSearchQuery('');
+    setShowResults(false);
+    setSearchResults([]);
   };
 
   return (
@@ -114,7 +139,7 @@ const BirthDataForm: React.FC<BirthDataFormProps> = ({ date, location, onDateCha
           </IonCol>
         </IonRow>
 
-        {/* Hora com setas +/- hora e +/- minuto */}
+        {/* Hora com setas +/- hora + Tattwa */}
         <IonRow className="ion-align-items-center">
           <IonCol size="auto">
             <IonButton fill="clear" size="small" className="arrow-btn" onClick={() => adjustHour(-1)}>
@@ -130,6 +155,9 @@ const BirthDataForm: React.FC<BirthDataFormProps> = ({ date, location, onDateCha
                 onIonChange={(e) => handleTimeInput(e.detail.value ?? undefined)}
               />
             </IonItem>
+          </IonCol>
+          <IonCol size="auto" className="tattwa-col">
+            <TattwaIndicator tattwa={tattwa} />
           </IonCol>
           <IonCol size="auto">
             <IonButton fill="clear" size="small" className="arrow-btn" onClick={() => adjustHour(1)}>
@@ -150,35 +178,49 @@ const BirthDataForm: React.FC<BirthDataFormProps> = ({ date, location, onDateCha
           </IonButton>
         </IonRow>
 
-        {/* Local */}
+        {/* Busca de localização */}
         <IonRow>
           <IonCol size="12">
             <IonItem lines="none" className="form-item">
-              <IonLabel position="stacked" color="warning">Local</IonLabel>
+              <IonLabel position="stacked" color="warning">
+                <IonIcon icon={searchOutline} style={{ marginRight: 4, fontSize: '0.85rem' }} />
+                Buscar Local
+              </IonLabel>
               <IonInput
                 type="text"
-                value={location.name}
-                onIonChange={(e) => {
-                  if (e.detail.value !== undefined) onLocationChange({ ...location, name: e.detail.value || '' });
-                }}
+                placeholder="Digite uma cidade..."
+                value={searchQuery}
+                onIonInput={(e) => handleSearchInput((e.target as HTMLIonInputElement).value as string || '')}
               />
+              {isSearching && <IonSpinner name="dots" style={{ position: 'absolute', right: 8, top: '50%' }} />}
             </IonItem>
+
+            {/* Dropdown de resultados */}
+            {showResults && (
+              <div className="location-results">
+                {searchResults.map((result, idx) => (
+                  <div
+                    key={idx}
+                    className="location-result-item"
+                    onClick={() => selectLocation(result)}
+                  >
+                    {result.display_name}
+                  </div>
+                ))}
+              </div>
+            )}
           </IonCol>
         </IonRow>
+
+        {/* Local selecionado (read-only) */}
         <IonRow>
-          <IonCol size="6">
-            <IonItem lines="none" className="form-item">
-              <IonLabel position="stacked" color="warning">Lat</IonLabel>
-              <IonInput type="number" value={location.lat.toString()} step="0.0001"
-                onIonChange={(e) => handleLatChange(e.detail.value ?? undefined)} />
-            </IonItem>
-          </IonCol>
-          <IonCol size="6">
-            <IonItem lines="none" className="form-item">
-              <IonLabel position="stacked" color="warning">Lon</IonLabel>
-              <IonInput type="number" value={location.lon.toString()} step="0.0001"
-                onIonChange={(e) => handleLonChange(e.detail.value ?? undefined)} />
-            </IonItem>
+          <IonCol size="12">
+            <div className="selected-location">
+              <span className="selected-location-name">{location.name}</span>
+              <span className="selected-location-coords">
+                {location.lat.toFixed(4)}, {location.lon.toFixed(4)}
+              </span>
+            </div>
           </IonCol>
         </IonRow>
       </IonGrid>

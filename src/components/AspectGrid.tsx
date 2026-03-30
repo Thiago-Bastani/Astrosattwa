@@ -1,5 +1,6 @@
 import React from 'react';
 import type { PlanetPosition } from '../types/astro';
+import { PLANET_COLORS } from '../utils/zodiac';
 
 interface AspectGridProps {
   planets: PlanetPosition[];
@@ -22,19 +23,6 @@ const ASPECTS: AspectType[] = [
   { name: 'Quincúncio',   angle: 150, orb: 2, glyph: '\u26BB', color: '#95a5a6' },
   { name: 'Semi-sextil',  angle: 30,  orb: 2, glyph: '\u26BA', color: '#95a5a6' },
 ];
-
-const PLANET_COLORS: Record<string, string> = {
-  Sun:     '#f1c40f',
-  Moon:    '#ecf0f1',
-  Mercury: '#bdc3c7',
-  Venus:   '#e91e8c',
-  Mars:    '#e74c3c',
-  Jupiter: '#e67e22',
-  Saturn:  '#95a5a6',
-  Uranus:  '#1abc9c',
-  Neptune: '#3498db',
-  Pluto:   '#9b59b6',
-};
 
 function findAspect(lon1: number, lon2: number): AspectType | null {
   const diff = Math.abs(lon1 - lon2);

@@ -1,11 +1,18 @@
-import { Route } from 'react-router-dom';
+import { Redirect, Route } from 'react-router-dom';
 import {
   IonApp,
+  IonIcon,
+  IonLabel,
   IonRouterOutlet,
+  IonTabBar,
+  IonTabButton,
+  IonTabs,
   setupIonicReact
 } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
+import { planetOutline, bookOutline } from 'ionicons/icons';
 import MandalaPage from './pages/MandalaPage';
+import ReferencePage from './pages/ReferencePage';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -23,15 +30,6 @@ import '@ionic/react/css/text-transformation.css';
 import '@ionic/react/css/flex-utils.css';
 import '@ionic/react/css/display.css';
 
-/**
- * Ionic Dark Mode
- * -----------------------------------------------------
- * For more info, please see:
- * https://ionicframework.com/docs/theming/dark-mode
- */
-
-/* import '@ionic/react/css/palettes/dark.always.css'; */
-/* import '@ionic/react/css/palettes/dark.class.css'; */
 import '@ionic/react/css/palettes/dark.system.css';
 
 /* Theme variables */
@@ -42,11 +40,23 @@ setupIonicReact();
 const App: React.FC = () => (
   <IonApp>
     <IonReactRouter>
-      <IonRouterOutlet>
-        <Route exact path="/">
-          <MandalaPage />
-        </Route>
-      </IonRouterOutlet>
+      <IonTabs>
+        <IonRouterOutlet>
+          <Route exact path="/mandala" component={MandalaPage} />
+          <Route exact path="/referencia" component={ReferencePage} />
+          <Redirect exact from="/" to="/mandala" />
+        </IonRouterOutlet>
+        <IonTabBar slot="bottom" style={{ '--background': '#000000', '--color': '#7f8c8d', '--color-selected': '#c9a84c' } as any}>
+          <IonTabButton tab="mandala" href="/mandala">
+            <IonIcon icon={planetOutline} />
+            <IonLabel>Mapa</IonLabel>
+          </IonTabButton>
+          <IonTabButton tab="referencia" href="/referencia">
+            <IonIcon icon={bookOutline} />
+            <IonLabel>Referência</IonLabel>
+          </IonTabButton>
+        </IonTabBar>
+      </IonTabs>
     </IonReactRouter>
   </IonApp>
 );

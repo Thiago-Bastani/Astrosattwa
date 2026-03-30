@@ -1,5 +1,6 @@
 import React from 'react';
 import type { PlanetPosition } from '../types/astro';
+import { PLANET_COLORS } from '../utils/zodiac';
 
 interface PlanetMarkerProps {
   planet: PlanetPosition;
@@ -9,19 +10,6 @@ interface PlanetMarkerProps {
   ascendant: number;
   offsetRadius?: number;
 }
-
-const PLANET_COLORS: Record<string, string> = {
-  Sun:     '#f1c40f',
-  Moon:    '#ecf0f1',
-  Mercury: '#bdc3c7',
-  Venus:   '#e91e8c',
-  Mars:    '#e74c3c',
-  Jupiter: '#e67e22',
-  Saturn:  '#95a5a6',
-  Uranus:  '#1abc9c',
-  Neptune: '#3498db',
-  Pluto:   '#9b59b6',
-};
 
 const PlanetMarker: React.FC<PlanetMarkerProps> = ({ planet, cx, cy, radius, ascendant, offsetRadius = 0 }) => {
   const svgAngle = ((180 + planet.longitude - ascendant) * Math.PI) / 180;

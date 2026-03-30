@@ -1,0 +1,102 @@
+.reference-content {
+  --background: #0a0a2e;
+}
+
+/* Cards */
+.ref-card {
+  --background: rgba(255, 255, 255, 0.03);
+  --color: #ecf0f1;
+  border: 1px solid rgba(201, 168, 76, 0.15);
+  border-radius: 12px;
+  margin: 12px;
+}
+
+.ref-card-title {
+  color: #c9a84c;
+  font-size: 1.05rem;
+  font-family: 'Georgia', serif;
+  letter-spacing: 1px;
+}
+
+/* Tabelas */
+.ref-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ref-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  min-width: 360px;
+}
+
+.ref-table th {
+  color: #c9a84c;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 6px 8px;
+  border-bottom: 1px solid rgba(201, 168, 76, 0.25);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.ref-table td {
+  padding: 8px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.ref-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Elementos */
+.element-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0 8px 10px;
+  border-left: 3px solid;
+  margin-bottom: 8px;
+}
+
+.element-name {
+  font-weight: bold;
+  font-size: 0.85rem;
+  min-width: 45px;
+}
+
+.element-signs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.element-sign-chip {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border: 1px solid;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+/* Informações Gerais */
+.general-info .info-section {
+  margin-bottom: 16px;
+}
+
+.general-info .info-section h4 {
+  color: #c9a84c;
+  font-size: 0.9rem;
+  margin: 0 0 6px 0;
+}
+
+.general-info .info-section p {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  margin: 4px 0;
+}

@@ -37,6 +37,7 @@ const MandalaPage: React.FC = () => {
         <MandalaChart data={chartData} />
         <PlanetList planets={chartData.planets} />
         <AspectGrid planets={chartData.planets} />
+        <div style={{ height: 80 }} />
       </IonContent>
     </IonPage>
   );
