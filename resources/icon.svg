@@ -1,0 +1,64 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Gradiente dourado principal -->
+    <radialGradient id="starGoldIcon" cx="50%" cy="40%" r="80%">
+      <stop offset="0%" style="stop-color:#FFFF99;stop-opacity:1" />
+      <stop offset="30%" style="stop-color:#FFD700;stop-opacity:1" />
+      <stop offset="70%" style="stop-color:#FFA500;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#DAA520;stop-opacity:1" />
+    </radialGradient>
+    
+    <!-- Gradiente da cauda -->
+    <linearGradient id="tailIcon" x1="100%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
+      <stop offset="60%" style="stop-color:#FFA500;stop-opacity:0.7" />
+      <stop offset="100%" style="stop-color:#FF8C00;stop-opacity:0.3" />
+    </linearGradient>
+    
+    <!-- Filtro de brilho -->
+    <filter id="glowIcon" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#FFD700"/>
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge> 
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Fundo transparente/escuro -->
+  <rect width="1024" height="1024" fill="#0F0F23" rx="180"/>
+  
+  <!-- Cauda da estrela cadente (simplificada) -->
+  <path d="M 150 700 Q 300 600 450 500 Q 520 460 590 420" 
+        stroke="url(#tailIcon)" 
+        stroke-width="24" 
+        fill="none" 
+        stroke-linecap="round" 
+        opacity="0.9"/>
+        
+  <path d="M 120 720 Q 260 620 400 540 Q 470 500 540 460" 
+        stroke="url(#tailIcon)" 
+        stroke-width="16" 
+        fill="none" 
+        stroke-linecap="round" 
+        opacity="0.7"/>
+  
+  <!-- Estrela principal (mais simples, 6 pontas) -->
+  <g transform="translate(600,400)" filter="url(#glowIcon)">
+    <!-- Estrela de 6 pontas mais clean -->
+    <path d="M 0,-120 L 30,-40 L 100,-40 L 50,0 L 70,70 L 0,40 L -70,70 L -50,0 L -100,-40 L -30,-40 Z" 
+          fill="url(#starGoldIcon)" 
+          stroke="#FFD700" 
+          stroke-width="4"/>
+    
+    <!-- Centro brilhante -->
+    <circle cx="0" cy="0" r="30" fill="#FFFF99" opacity="0.9"/>
+    <circle cx="0" cy="0" r="15" fill="#FFFFFF" opacity="0.7"/>
+  </g>
+  
+  <!-- Partículas de brilho menores -->
+  <circle cx="520" cy="320" r="6" fill="#FFD700" opacity="0.8"/>
+  <circle cx="680" cy="480" r="4" fill="#FFA500" opacity="0.7"/>
+  <circle cx="500" cy="520" r="5" fill="#FFFF99" opacity="0.6"/>
+</svg>

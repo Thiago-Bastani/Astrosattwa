@@ -1,0 +1,69 @@
+<svg width="2732" height="2732" viewBox="0 0 2732 2732" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Gradiente dourado para splash -->
+    <radialGradient id="starSplash" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" style="stop-color:#FFFF99;stop-opacity:1" />
+      <stop offset="40%" style="stop-color:#FFD700;stop-opacity:1" />
+      <stop offset="80%" style="stop-color:#FFA500;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#DAA520;stop-opacity:1" />
+    </radialGradient>
+    
+    <!-- Gradiente do fundo -->
+    <radialGradient id="bgSplash" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" style="stop-color:#1a1a2e;stop-opacity:1" />
+      <stop offset="70%" style="stop-color:#16213e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0f0f23;stop-opacity:1" />
+    </radialGradient>
+    
+    <!-- Filtro de brilho suave -->
+    <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="0" stdDeviation="12" flood-color="#FFD700" flood-opacity="0.6"/>
+      <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
+      <feMerge> 
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Fundo gradiente escuro -->
+  <rect width="2732" height="2732" fill="url(#bgSplash)"/>
+  
+  <!-- Estrelas pequenas de fundo -->
+  <circle cx="400" cy="400" r="3" fill="#FFD700" opacity="0.4"/>
+  <circle cx="2200" cy="600" r="2" fill="#FFA500" opacity="0.3"/>
+  <circle cx="300" cy="1800" r="4" fill="#FFFFFF" opacity="0.5"/>
+  <circle cx="2400" cy="1900" r="2" fill="#FFD700" opacity="0.6"/>
+  <circle cx="600" cy="2400" r="3" fill="#FFA500" opacity="0.4"/>
+  <circle cx="2000" cy="200" r="2" fill="#FFFFFF" opacity="0.3"/>
+  
+  <!-- Estrela principal centralizada -->
+  <g transform="translate(1366,1366)" filter="url(#softGlow)">
+    <!-- Estrela de 8 pontas -->
+    <path d="M 0,-180 L 45,-60 L 150,-60 L 75,0 L 105,105 L 0,60 L -105,105 L -75,0 L -150,-60 L -45,-60 Z" 
+          fill="url(#starSplash)" 
+          stroke="#FFD700" 
+          stroke-width="6"/>
+    
+    <!-- Centro brilhante -->
+    <circle cx="0" cy="0" r="45" fill="#FFFF99" opacity="0.8"/>
+    <circle cx="0" cy="0" r="25" fill="#FFFFFF" opacity="0.6"/>
+  </g>
+  
+  <!-- Texto do app (opcional) -->
+  <text x="1366" y="1650" 
+        text-anchor="middle" 
+        font-family="serif" 
+        font-size="80" 
+        font-weight="300" 
+        fill="#c9a84c" 
+        letter-spacing="8">
+    ASTROSATTWA
+  </text>
+  
+  <!-- Partículas animadas ao redor (opcional para splash animado) -->
+  <circle cx="1200" cy="1200" r="2" fill="#FFD700" opacity="0.7"/>
+  <circle cx="1500" cy="1100" r="1.5" fill="#FFA500" opacity="0.5"/>
+  <circle cx="1100" cy="1500" r="2.5" fill="#FFFF99" opacity="0.6"/>
+  <circle cx="1600" cy="1600" r="1" fill="#FFFFFF" opacity="0.8"/>
+</svg>

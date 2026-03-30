@@ -1,0 +1,8 @@
+# ! Esta é uma representação de um ícone PNG 1024x1024
+# O arquivo SVG /resources/icon.svg deve ser convertido para PNG
+# Use ferramentas como:
+# - https://convertio.co/svg-png/ (online)  
+# - Inkscape: inkscape icon.svg --export-png=icon.png --export-width=1024
+# - ImageMagick: convert icon.svg -resize 1024x1024 icon.png
+
+# Arquivo temporário - substitua por icon.png real de 1024x1024

@@ -1,0 +1,86 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Gradiente dourado -->
+    <radialGradient id="starGold" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
+      <stop offset="40%" style="stop-color:#FFA500;stop-opacity:1" />
+      <stop offset="80%" style="stop-color:#FF8C00;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#DAA520;stop-opacity:1" />
+    </radialGradient>
+    
+    <!-- Gradiente da cauda -->
+    <linearGradient id="tailGradient" x1="100%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#FFA500;stop-opacity:0.6" />
+      <stop offset="100%" style="stop-color:#FF8C00;stop-opacity:0.2" />
+    </linearGradient>
+    
+    <!-- Filtro para brilho -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge> 
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Fundo escuro celestial -->
+  <rect width="512" height="512" fill="#0a0a1a"/>
+  
+  <!-- Cauda da estrela cadente -->
+  <path d="M 80 380 Q 180 320 280 260 Q 320 240 360 220" 
+        stroke="url(#tailGradient)" 
+        stroke-width="12" 
+        fill="none" 
+        stroke-linecap="round" 
+        opacity="0.8"/>
+        
+  <path d="M 60 400 Q 160 340 240 290 Q 280 270 320 250" 
+        stroke="url(#tailGradient)" 
+        stroke-width="8" 
+        fill="none" 
+        stroke-linecap="round" 
+        opacity="0.6"/>
+        
+  <path d="M 100 360 Q 180 310 260 270 Q 300 250 340 230" 
+        stroke="url(#tailGradient)" 
+        stroke-width="6" 
+        fill="none" 
+        stroke-linecap="round" 
+        opacity="0.4"/>
+  
+  <!-- Estrela principal (8 pontas) -->
+  <g transform="translate(360,220)" filter="url(#glow)">
+    <!-- Estrela de 8 pontas -->
+    <path d="M 0,-60 L 15,-20 L 50,-20 L 25,0 L 35,35 L 0,20 L -35,35 L -25,0 L -50,-20 L -15,-20 Z" 
+          fill="url(#starGold)" 
+          stroke="#FFD700" 
+          stroke-width="2"/>
+    
+    <!-- Brilhos internos -->
+    <circle cx="0" cy="0" r="15" fill="#FFFF99" opacity="0.8"/>
+    <circle cx="0" cy="0" r="8" fill="#FFFFFF" opacity="0.6"/>
+  </g>
+  
+  <!-- Estrelas menores de fundo -->
+  <circle cx="120" cy="80" r="2" fill="#FFD700" opacity="0.7"/>
+  <circle cx="180" cy="120" r="1.5" fill="#FFA500" opacity="0.5"/>
+  <circle cx="450" cy="90" r="2.5" fill="#FFD700" opacity="0.6"/>
+  <circle cx="480" cy="150" r="1" fill="#FFFFFF" opacity="0.8"/>
+  <circle cx="100" cy="200" r="1.5" fill="#FFA500" opacity="0.4"/>
+  <circle cx="420" cy="380" r="2" fill="#FFD700" opacity="0.5"/>
+  
+  <!-- Partículas de brilho -->
+  <g opacity="0.7">
+    <circle cx="340" cy="200" r="1" fill="#FFFF99">
+      <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="380" cy="240" r="1.5" fill="#FFD700">
+      <animate attributeName="opacity" values="0.5;1;0.5" dur="1.5s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="320" cy="260" r="1" fill="#FFA500">
+      <animate attributeName="opacity" values="0.2;0.8;0.2" dur="3s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+</svg>
