@@ -121,6 +121,29 @@ export function getSignRuler(signName: string): string | undefined {
   return SIGN_RULERS[signName] || undefined;
 }
 
+/* ── Função para obter signos de domicílio de um planeta ── */
+export function getPlanetDomicileSigns(planetName: string): string[] {
+  const entry = DIGNITY_TABLE[planetName];
+  return entry ? entry.domicilio : [];
+}
+
+/* ── Função para calcular dignidades nos signos de domicílio do regente ── */
+export function getRulerSignDignities(planetName: string, houseRuler: string): { sign: string; dignity: DignityType }[] {
+  if (!houseRuler) return [];
+  
+  const rulerDomicileSigns = getPlanetDomicileSigns(houseRuler);
+  const dignities: { sign: string; dignity: DignityType }[] = [];
+  
+  for (const sign of rulerDomicileSigns) {
+    const dignity = getDignity(planetName, sign);
+    if (dignity) { // Só adiciona se tiver dignidade (não null)
+      dignities.push({ sign, dignity });
+    }
+  }
+  
+  return dignities;
+}
+
 export function getHouseFromLongitude(planetLongitude: number, houseCusps: number[]): number {
   // Normaliza a longitude do planeta
   const normalizedPlanet = ((planetLongitude % 360) + 360) % 360;

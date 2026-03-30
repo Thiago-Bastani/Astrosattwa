@@ -1,6 +1,6 @@
 import * as Astronomy from 'astronomy-engine';
 import type { GeoLocation, ChartData, PlanetPosition } from '../types/astro';
-import { getZodiacSign, getDecanate, getDignity, getHouseFromLongitude, getSignRuler, PLANET_GLYPHS } from '../utils/zodiac';
+import { getZodiacSign, getDecanate, getDignity, getHouseFromLongitude, getSignRuler, getRulerSignDignities, PLANET_GLYPHS } from '../utils/zodiac';
 
 const PLANET_BODIES: { name: string; body: string }[] = [
   { name: 'Sun',     body: 'Sun' },
@@ -120,6 +120,7 @@ export function calculateChart(date: Date, location: GeoLocation): ChartData {
     const house = getHouseFromLongitude(longitude, houseCusps);
     const houseSign = getZodiacSign(houseCusps[house - 1]).sign.name;
     const houseRuler = getSignRuler(houseSign);
+    const rulerSignDignities = houseRuler ? getRulerSignDignities(name, houseRuler) : [];
     
     return {
       name,
@@ -133,6 +134,7 @@ export function calculateChart(date: Date, location: GeoLocation): ChartData {
       dignity: getDignity(name, sign.name),
       house,
       houseRuler,
+      rulerSignDignities,
     };
   });
 
@@ -149,6 +151,7 @@ export function calculateChart(date: Date, location: GeoLocation): ChartData {
     const house = getHouseFromLongitude(vp.longitude, houseCusps);
     const houseSign = getZodiacSign(houseCusps[house - 1]).sign.name;
     const houseRuler = getSignRuler(houseSign);
+    const rulerSignDignities = houseRuler ? getRulerSignDignities(vp.name, houseRuler) : [];
     
     planets.push({
       name: vp.name,
@@ -163,6 +166,7 @@ export function calculateChart(date: Date, location: GeoLocation): ChartData {
       isVirtual: true,
       house,
       houseRuler,
+      rulerSignDignities,
     });
   }
 

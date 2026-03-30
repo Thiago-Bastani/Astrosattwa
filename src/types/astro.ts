@@ -19,6 +19,7 @@ export interface PlanetPosition {
   isVirtual?: boolean;
   house?: number;
   houseRuler?: string;
+  rulerSignDignities?: { sign: string; dignity: DignityType }[];
 }
 
 export interface ChartData {

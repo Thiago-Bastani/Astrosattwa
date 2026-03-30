@@ -51,12 +51,28 @@ function DignityBadge({ dignity }: { dignity: DignityType }) {
   );
 }
 
-function HouseRulerInfo({ house, houseRuler }: { house?: number; houseRuler?: string }) {
+function HouseRulerInfo({ house, houseRuler, rulerSignDignities }: { 
+  house?: number; 
+  houseRuler?: string; 
+  rulerSignDignities?: { sign: string; dignity: DignityType }[];
+}) {
   if (!house || !houseRuler) return null;
   
   const rulerGlyph = PLANET_GLYPHS[houseRuler] || houseRuler;
   const rulerColor = PLANET_COLORS[houseRuler] || '#aaa';
   const rulerName = PLANET_NAMES_PT[houseRuler] || houseRuler;
+  
+  // Formatação das dignidades nos signos de domicílio do regente
+  let dignityText = '';
+  if (rulerSignDignities && rulerSignDignities.length > 0) {
+    const dignityInfo = rulerSignDignities.map(({ sign, dignity }) => {
+      const dignityLabel = DIGNITY_LABELS[dignity]?.label || dignity;
+      return `${sign}: ${dignityLabel}`;
+    }).join(', ');
+    dignityText = ` (${dignityInfo})`;
+  } else {
+    dignityText = ' (N/A)';
+  }
   
   return (
     <span style={{
@@ -76,7 +92,7 @@ function HouseRulerInfo({ house, houseRuler }: { house?: number; houseRuler?: st
         {rulerGlyph}
       </span>
       <span style={{ color: rulerColor }}>
-        {rulerName}
+        {rulerName}{dignityText}
       </span>
     </span>
   );
@@ -113,7 +129,7 @@ const PlanetList: React.FC<PlanetListProps> = ({ planets }) => {
                 </span>
               )}
               <DignityBadge dignity={planet.dignity ?? null} />
-              <HouseRulerInfo house={planet.house} houseRuler={planet.houseRuler} />
+              <HouseRulerInfo house={planet.house} houseRuler={planet.houseRuler} rulerSignDignities={planet.rulerSignDignities} />
             </p>
           </IonLabel>
         </IonItem>

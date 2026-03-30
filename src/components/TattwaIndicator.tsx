@@ -10,12 +10,12 @@ function TattwaShape({ shape, color, size = 28 }: { shape: string; color: string
   const half = size / 2;
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="tattwa-shape-svg">
-      {/* Akasha: meia-lua virada para a esquerda */}
+      {/* Akasha: meia-lua virada para a esquerda (arco direto) */}
       {shape === 'crescent-left' && (
-        <>
-          <circle cx={half} cy={half} r={half * 0.75} fill={color} />
-          <circle cx={half - size * 0.22} cy={half} r={half * 0.62} fill="#000000" />
-        </>
+        <path
+          d={`M ${half} ${half - 10} A 10 10 0 0 1 ${half} ${half + 10} A 4 10 0 0 0 ${half} ${half - 10}`}
+          fill={color}
+        />
       )}
       {/* Vayu: pentágono */}
       {shape === 'pentagon' && (() => {
@@ -37,12 +37,12 @@ function TattwaShape({ shape, color, size = 28 }: { shape: string; color: string
       {shape === 'square' && (
         <rect x={size * 0.15} y={size * 0.15} width={size * 0.7} height={size * 0.7} fill={color} />
       )}
-      {/* Apas: meia-lua virada para cima */}
+      {/* Apas: meia-lua virada para cima (arco direto) */}
       {shape === 'crescent-up' && (
-        <>
-          <circle cx={half} cy={half} r={half * 0.75} fill={color} />
-          <circle cx={half} cy={half - size * 0.22} r={half * 0.62} fill="#000000" />
-        </>
+        <path
+          d={`M ${half - 10} ${half} A 10 10 0 0 0 ${half + 10} ${half} A 10 6 0 0 1 ${half - 10} ${half}`}
+          fill={color}
+        />
       )}
     </svg>
   );
