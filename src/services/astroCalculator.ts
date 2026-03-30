@@ -1,6 +1,6 @@
 import * as Astronomy from 'astronomy-engine';
 import type { GeoLocation, ChartData, PlanetPosition } from '../types/astro';
-import { getZodiacSign, getDecanate, getDignity, PLANET_GLYPHS } from '../utils/zodiac';
+import { getZodiacSign, getDecanate, getDignity, getHouseFromLongitude, getSignRuler, PLANET_GLYPHS } from '../utils/zodiac';
 
 const PLANET_BODIES: { name: string; body: string }[] = [
   { name: 'Sun',     body: 'Sun' },
@@ -106,10 +106,21 @@ function calculateVertex(date: Date, location: GeoLocation): number {
 /* ── Chart principal ── */
 
 export function calculateChart(date: Date, location: GeoLocation): ChartData {
+  // Ângulos (calcular primeiro para ter as casas)
+  const { ascendant, mc } = calculateAnglesForLat(date, location.lon, location.lat);
+  const descendant = normalizeDeg(ascendant + 180);
+  const ic = normalizeDeg(mc + 180);
+
+  const houseCusps = Array.from({ length: 12 }, (_, i) => normalizeDeg(ascendant + i * 30));
+
   // Planetas reais
   const planets: PlanetPosition[] = PLANET_BODIES.map(({ name, body }) => {
     const longitude = getPlanetLongitude(body, date);
     const { sign, degree, minute } = getZodiacSign(longitude);
+    const house = getHouseFromLongitude(longitude, houseCusps);
+    const houseSign = getZodiacSign(houseCusps[house - 1]).sign.name;
+    const houseRuler = getSignRuler(houseSign);
+    
     return {
       name,
       longitude,
@@ -120,6 +131,8 @@ export function calculateChart(date: Date, location: GeoLocation): ChartData {
       isRetrograde: checkRetrograde(body, date),
       decanate: getDecanate(degree),
       dignity: getDignity(name, sign.name),
+      house,
+      houseRuler,
     };
   });
 
@@ -133,6 +146,10 @@ export function calculateChart(date: Date, location: GeoLocation): ChartData {
 
   for (const vp of virtualPoints) {
     const { sign, degree, minute } = getZodiacSign(vp.longitude);
+    const house = getHouseFromLongitude(vp.longitude, houseCusps);
+    const houseSign = getZodiacSign(houseCusps[house - 1]).sign.name;
+    const houseRuler = getSignRuler(houseSign);
+    
     planets.push({
       name: vp.name,
       longitude: vp.longitude,
@@ -144,15 +161,10 @@ export function calculateChart(date: Date, location: GeoLocation): ChartData {
       decanate: getDecanate(degree),
       dignity: null,
       isVirtual: true,
+      house,
+      houseRuler,
     });
   }
-
-  // Ângulos
-  const { ascendant, mc } = calculateAnglesForLat(date, location.lon, location.lat);
-  const descendant = normalizeDeg(ascendant + 180);
-  const ic = normalizeDeg(mc + 180);
-
-  const houseCusps = Array.from({ length: 12 }, (_, i) => normalizeDeg(ascendant + i * 30));
 
   return { planets, houseCusps, ascendant, mc, descendant, ic };
 }

@@ -17,6 +17,8 @@ export interface PlanetPosition {
   decanate?: 1 | 2 | 3;
   dignity?: DignityType;
   isVirtual?: boolean;
+  house?: number;
+  houseRuler?: string;
 }
 
 export interface ChartData {

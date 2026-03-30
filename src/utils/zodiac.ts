@@ -100,3 +100,46 @@ export function getZodiacSign(longitude: number): { sign: ZodiacSignInfo; degree
   const minute = Math.floor((degreeInSign - degree) * 60);
   return { sign: ZODIAC_SIGNS[signIndex], degree, minute };
 }
+
+/* ── Tabela de regências dos signos ── */
+export const SIGN_RULERS: Record<string, string> = {
+  'Aries':       'Mars',
+  'Taurus':      'Venus', 
+  'Gemini':      'Mercury',
+  'Cancer':      'Moon',
+  'Leo':         'Sun',
+  'Virgo':       'Mercury',
+  'Libra':       'Venus',
+  'Scorpio':     'Pluto', // regente moderno
+  'Sagittarius': 'Jupiter',
+  'Capricorn':   'Saturn',
+  'Aquarius':    'Uranus', // regente moderno
+  'Pisces':      'Neptune', // regente moderno
+};
+
+export function getSignRuler(signName: string): string | undefined {
+  return SIGN_RULERS[signName] || undefined;
+}
+
+export function getHouseFromLongitude(planetLongitude: number, houseCusps: number[]): number {
+  // Normaliza a longitude do planeta
+  const normalizedPlanet = ((planetLongitude % 360) + 360) % 360;
+  
+  for (let i = 0; i < 12; i++) {
+    const currentCusp = ((houseCusps[i] % 360) + 360) % 360;
+    const nextCusp = ((houseCusps[(i + 1) % 12] % 360) + 360) % 360;
+    
+    // Se as cúspides cruzam o 0°
+    if (currentCusp > nextCusp) {
+      if (normalizedPlanet >= currentCusp || normalizedPlanet < nextCusp) {
+        return i + 1;
+      }
+    } else {
+      if (normalizedPlanet >= currentCusp && normalizedPlanet < nextCusp) {
+        return i + 1;
+      }
+    }
+  }
+  
+  return 1; // fallback para casa 1
+}

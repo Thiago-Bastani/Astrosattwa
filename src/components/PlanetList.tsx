@@ -1,7 +1,7 @@
 import React from 'react';
 import { IonList, IonItem, IonLabel } from '@ionic/react';
 import type { PlanetPosition, DignityType } from '../types/astro';
-import { PLANET_COLORS } from '../utils/zodiac';
+import { PLANET_COLORS, PLANET_GLYPHS } from '../utils/zodiac';
 
 interface PlanetListProps {
   planets: PlanetPosition[];
@@ -51,6 +51,37 @@ function DignityBadge({ dignity }: { dignity: DignityType }) {
   );
 }
 
+function HouseRulerInfo({ house, houseRuler }: { house?: number; houseRuler?: string }) {
+  if (!house || !houseRuler) return null;
+  
+  const rulerGlyph = PLANET_GLYPHS[houseRuler] || houseRuler;
+  const rulerColor = PLANET_COLORS[houseRuler] || '#aaa';
+  const rulerName = PLANET_NAMES_PT[houseRuler] || houseRuler;
+  
+  return (
+    <span style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      fontSize: '0.7rem',
+      marginLeft: 8,
+      padding: '2px 6px',
+      borderRadius: 4,
+      background: 'rgba(255,255,255,0.05)',
+      border: '1px solid rgba(255,255,255,0.1)',
+    }}>
+      <span style={{ marginRight: 4, color: 'rgba(255,255,255,0.6)' }}>
+        Casa {house}:
+      </span>
+      <span style={{ color: rulerColor, fontSize: '0.9rem', marginRight: 2 }}>
+        {rulerGlyph}
+      </span>
+      <span style={{ color: rulerColor }}>
+        {rulerName}
+      </span>
+    </span>
+  );
+}
+
 const PlanetList: React.FC<PlanetListProps> = ({ planets }) => {
   return (
     <IonList lines="none" style={{ background: 'transparent' }}>
@@ -82,6 +113,7 @@ const PlanetList: React.FC<PlanetListProps> = ({ planets }) => {
                 </span>
               )}
               <DignityBadge dignity={planet.dignity ?? null} />
+              <HouseRulerInfo house={planet.house} houseRuler={planet.houseRuler} />
             </p>
           </IonLabel>
         </IonItem>
