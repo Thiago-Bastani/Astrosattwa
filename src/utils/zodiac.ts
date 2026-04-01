@@ -37,6 +37,7 @@ export const PLANET_GLYPHS: Record<string, string> = {
   NorthNode: '\u260A',
   SouthNode: '\u260B',
   Vertex:    'Vx',
+  Chiron:    '\u26B7',
 };
 
 export const PLANET_COLORS: Record<string, string> = {
@@ -54,6 +55,7 @@ export const PLANET_COLORS: Record<string, string> = {
   NorthNode: '#c9a84c',
   SouthNode: '#7f8c8d',
   Vertex:    '#16a085',
+  Chiron:    '#d4a017',
 };
 
 /* ── Tabela de dignidades ── */

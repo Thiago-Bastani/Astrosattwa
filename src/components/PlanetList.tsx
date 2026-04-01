@@ -1,7 +1,7 @@
 import React from 'react';
 import { IonList, IonItem, IonLabel } from '@ionic/react';
 import type { PlanetPosition, DignityType } from '../types/astro';
-import { PLANET_COLORS, PLANET_GLYPHS } from '../utils/zodiac';
+import { PLANET_COLORS, PLANET_GLYPHS, SIGN_RULERS } from '../utils/zodiac';
 
 interface PlanetListProps {
   planets: PlanetPosition[];
@@ -29,6 +29,7 @@ const PLANET_NAMES_PT: Record<string, string> = {
   NorthNode: 'Nodo Norte',
   SouthNode: 'Nodo Sul',
   Vertex:    'Vertex',
+  Chiron:    'Quíron',
 };
 
 function DignityBadge({ dignity }: { dignity: DignityType }) {
@@ -66,7 +67,7 @@ function HouseRulerInfo({ house, houseRuler, rulerSignDignities }: {
   let dignityText = '';
   if (rulerSignDignities && rulerSignDignities.length > 0) {
     const dignityInfo = rulerSignDignities.map(({ sign, dignity }) => {
-      const dignityLabel = DIGNITY_LABELS[dignity]?.label || dignity;
+      const dignityLabel = dignity ? (DIGNITY_LABELS[dignity]?.label || dignity) : '';
       return `${sign}: ${dignityLabel}`;
     }).join(', ');
     dignityText = ` (${dignityInfo})`;
@@ -123,6 +124,22 @@ const PlanetList: React.FC<PlanetListProps> = ({ planets }) => {
             </h3>
             <p style={{ color: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
               <span>{planet.signDegree}&deg;{planet.signMinute}&apos; {planet.zodiacSign}</span>
+              {(() => {
+                const ruler = SIGN_RULERS[planet.zodiacSign];
+                if (!ruler) return null;
+                const rulerGlyph = PLANET_GLYPHS[ruler] || '';
+                const rulerName = PLANET_NAMES_PT[ruler] || ruler;
+                const rulerColor = PLANET_COLORS[ruler] || '#aaa';
+                return (
+                  <span style={{
+                    fontSize: '0.7rem',
+                    color: rulerColor,
+                    opacity: 0.8,
+                  }}>
+                    ({rulerGlyph} {rulerName})
+                  </span>
+                );
+              })()}
               {planet.decanate && (
                 <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.45)' }}>
                   {planet.decanate}&deg; Dec

@@ -1,14 +1,13 @@
 import React from 'react';
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonCard, IonCardHeader, IonCardTitle, IonCardContent } from '@ionic/react';
 import { ZODIAC_SIGNS, PLANET_GLYPHS, PLANET_COLORS, DIGNITY_TABLE } from '../utils/zodiac';
+import { ZODIAC_SVG_PATHS } from '../utils/zodiacSvgPaths';
 import './ReferencePage.css';
-
-const SIGN_GLYPHS: Record<string, string> = {};
-ZODIAC_SIGNS.forEach(s => { SIGN_GLYPHS[s.name] = s.glyph; });
 
 const PLANET_NAMES_PT: Record<string, string> = {
   Sun: 'Sol', Moon: 'Lua', Mercury: 'Mercúrio', Venus: 'Vênus', Mars: 'Marte',
   Jupiter: 'Júpiter', Saturn: 'Saturno', Uranus: 'Urano', Neptune: 'Netuno', Pluto: 'Plutão',
+  Chiron: 'Quíron',
 };
 
 const SIGN_NAMES_PT: Record<string, string> = {
@@ -33,8 +32,37 @@ const OPPOSITES: [string, string][] = [
   ['Saturn', 'Sun'],
 ];
 
-function signLabel(names: string[]): string {
-  return names.map(n => `${SIGN_GLYPHS[n] || ''} ${SIGN_NAMES_PT[n] || n}`).join(', ');
+function SignSvgGlyph({ name, color, size = 14 }: { name: string; color: string; size?: number }) {
+  const path = ZODIAC_SVG_PATHS[name];
+  if (!path) return null;
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" style={{ verticalAlign: 'middle', marginRight: 2, flexShrink: 0 }}>
+      <path
+        d={path}
+        fill="none"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function SignLabel({ names, color }: { names: string[]; color: string }) {
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+      {names.map((n, i) => (
+        <React.Fragment key={n}>
+          {i > 0 && <span style={{ marginRight: 2 }}>,</span>}
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+            <SignSvgGlyph name={n} color={color} size={14} />
+            <span>{SIGN_NAMES_PT[n] || n}</span>
+          </span>
+        </React.Fragment>
+      ))}
+    </span>
+  );
 }
 
 /* ── Tabela de Regências ── */
@@ -65,10 +93,10 @@ function RulershipsCard() {
                     <td style={{ color: PLANET_COLORS[p] }}>
                       {PLANET_GLYPHS[p]} {PLANET_NAMES_PT[p]}
                     </td>
-                    <td style={{ color: '#2ecc71' }}>{signLabel(d.domicilio)}</td>
-                    <td style={{ color: '#f1c40f' }}>{signLabel(d.exaltacao)}</td>
-                    <td style={{ color: '#e74c3c' }}>{signLabel(d.queda)}</td>
-                    <td style={{ color: '#95a5a6' }}>{signLabel(d.exilio)}</td>
+                    <td style={{ color: '#2ecc71' }}><SignLabel names={d.domicilio} color="#2ecc71" /></td>
+                    <td style={{ color: '#f1c40f' }}><SignLabel names={d.exaltacao} color="#f1c40f" /></td>
+                    <td style={{ color: '#e74c3c' }}><SignLabel names={d.queda} color="#e74c3c" /></td>
+                    <td style={{ color: '#95a5a6' }}><SignLabel names={d.exilio} color="#95a5a6" /></td>
                   </tr>
                 );
               })}
@@ -97,8 +125,9 @@ function ElementsCard() {
               <span className="element-name" style={{ color: info.color }}>{info.pt}</span>
               <span className="element-signs">
                 {signs.map(s => (
-                  <span key={s.name} className="element-sign-chip" style={{ color: info.color, borderColor: `${info.color}44` }}>
-                    {s.glyph} {SIGN_NAMES_PT[s.name]}
+                  <span key={s.name} className="element-sign-chip" style={{ color: info.color, borderColor: `${info.color}44`, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                    <SignSvgGlyph name={s.name} color={info.color} size={13} />
+                    {SIGN_NAMES_PT[s.name]}
                   </span>
                 ))}
               </span>
@@ -143,6 +172,85 @@ function OppositesCard() {
   );
 }
 
+/* ── Aspectos ── */
+const ASPECT_INFO: { name: string; angle: number; glyph: string; color: string; element: string; rhythm: string; description: string }[] = [
+  {
+    name: 'Conjunção', angle: 0, glyph: '\u260C', color: '#f1c40f',
+    element: 'Mesmo elemento', rhythm: 'Mesmo ritmo',
+    description: 'Fusão de energias planetárias. Intensifica as qualidades dos planetas envolvidos, podendo ser harmônica ou tensa dependendo dos planetas.',
+  },
+  {
+    name: 'Semi-sextil', angle: 30, glyph: '\u26BA', color: '#95a5a6',
+    element: 'Elemento diferente', rhythm: 'Ritmo diferente',
+    description: 'Conexão sutil entre signos vizinhos. Ligação suave que pede atenção e refinamento consciente para integrar energias de naturezas distintas.',
+  },
+  {
+    name: 'Sextil', angle: 60, glyph: '\u26B9', color: '#3498db',
+    element: 'Elemento diferente (compatível)', rhythm: 'Mesmo ritmo',
+    description: 'Aspecto harmonioso que cria oportunidades. Conecta signos de elementos compatíveis (Fogo↔Ar, Terra↔Água). Indica talentos naturais e habilidades que fluem com facilidade.',
+  },
+  {
+    name: 'Quadratura', angle: 90, glyph: '\u25A1', color: '#e74c3c',
+    element: 'Elemento diferente (incompatível)', rhythm: 'Mesmo ritmo',
+    description: 'Tensão e desafio entre planetas do mesmo ritmo mas de elementos conflitantes. Gera fricção que motiva a ação e a superação de obstáculos. É o aspecto do crescimento através do esforço.',
+  },
+  {
+    name: 'Trígono', angle: 120, glyph: '\u25B3', color: '#2ecc71',
+    element: 'Mesmo elemento', rhythm: 'Ritmo diferente',
+    description: 'Grande harmonia e fluxo natural de energia. Conecta signos do mesmo elemento mas de ritmos diferentes. Os planetas cooperam facilmente, trazendo dons inatos e facilidade.',
+  },
+  {
+    name: 'Quincúncio', angle: 150, glyph: '\u26BB', color: '#95a5a6',
+    element: 'Elemento diferente', rhythm: 'Ritmo diferente',
+    description: 'Aspecto de ajuste e adaptação constante. Conecta signos sem afinidade de elemento nem de ritmo, exigindo esforço consciente para integrar energias aparentemente incompatíveis.',
+  },
+  {
+    name: 'Oposição', angle: 180, glyph: '\u260D', color: '#e74c3c',
+    element: 'Elemento diferente (compatível)', rhythm: 'Mesmo ritmo',
+    description: 'Polaridade e confronto entre forças opostas. Conecta signos de elementos compatíveis mas em polaridades opostas. Exige equilíbrio e integração dos opostos.',
+  },
+];
+
+function AspectsCard() {
+  return (
+    <IonCard className="ref-card">
+      <IonCardHeader>
+        <IonCardTitle className="ref-card-title">Aspectos Planetários</IonCardTitle>
+      </IonCardHeader>
+      <IonCardContent className="general-info">
+        {ASPECT_INFO.map(a => (
+          <div key={a.name} className="info-section" style={{ borderLeft: `3px solid ${a.color}`, paddingLeft: 10 }}>
+            <h4 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ color: a.color, fontSize: '1.1rem' }}>{a.glyph}</span>
+              <span>{a.name}</span>
+              <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', fontWeight: 'normal' }}>
+                ({a.angle}°)
+              </span>
+            </h4>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+              <span style={{
+                fontSize: '0.68rem', padding: '1px 6px', borderRadius: 4,
+                background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.55)',
+                border: '1px solid rgba(255,255,255,0.1)',
+              }}>
+                {a.element}
+              </span>
+              <span style={{
+                fontSize: '0.68rem', padding: '1px 6px', borderRadius: 4,
+                background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.55)',
+                border: '1px solid rgba(255,255,255,0.1)',
+              }}>
+                {a.rhythm}
+              </span>
+            </div>
+            <p>{a.description}</p>
+          </div>
+        ))}
+      </IonCardContent>
+    </IonCard>
+  );
+}
+
 /* ── Informações Gerais ── */
 function GeneralInfoCard() {
   return (
@@ -171,6 +279,7 @@ function GeneralInfoCard() {
         </div>
         <div className="info-section">
           <h4>Pontos Especiais</h4>
+          <p><strong>Quíron ⚷</strong> — O "curador ferido". Asteroide que representa nossas feridas mais profundas e o potencial de cura que nasce delas. Indica onde podemos ajudar os outros através da nossa própria experiência de dor.</p>
           <p><strong>Lilith (Lua Negra)</strong> — O apogeu lunar médio. Representa desejos inconscientes e aspectos ocultos da personalidade.</p>
           <p><strong>Nodo Norte ☊</strong> — O caminho kármico de evolução. Indica o que devemos desenvolver nesta vida.</p>
           <p><strong>Nodo Sul ☋</strong> — Habilidades trazidas de vidas passadas. Zona de conforto a ser transcendida.</p>
@@ -191,6 +300,7 @@ const ReferencePage: React.FC = () => {
       </IonHeader>
       <IonContent fullscreen className="reference-content">
         <RulershipsCard />
+        <AspectsCard />
         <ElementsCard />
         <OppositesCard />
         <GeneralInfoCard />

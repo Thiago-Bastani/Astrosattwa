@@ -75,6 +75,39 @@ function calculateNorthNode(date: Date): number {
   return normalizeDeg(omega);
 }
 
+/* ── Quíron ── */
+
+function calculateChiron(date: Date): number {
+  const T = dateToJulianCenturies(date);
+  const daysFromJ2000 = T * 36525;
+
+  // Elementos orbitais de Quíron no J2000.0
+  const e = 0.37911;           // excentricidade
+  const omega = 339.557;       // argumento do periélio (°)
+  const node = 209.385;        // longitude do nodo ascendente (°)
+  const M0 = 68.944;           // anomalia média no J2000 (°)
+  const n = 0.01955;           // movimento médio diário (°/dia)
+
+  // Anomalia média
+  const M = normalizeDeg(M0 + n * daysFromJ2000);
+  const Mrad = M * Math.PI / 180;
+
+  // Resolver equação de Kepler iterativamente: E - e*sin(E) = M
+  let E = Mrad;
+  for (let i = 0; i < 15; i++) {
+    E = Mrad + e * Math.sin(E);
+  }
+
+  // Anomalia verdadeira
+  const trueAnomaly = 2 * Math.atan2(
+    Math.sqrt(1 + e) * Math.sin(E / 2),
+    Math.sqrt(1 - e) * Math.cos(E / 2)
+  ) * 180 / Math.PI;
+
+  // Longitude eclíptica heliocêntrica (aproximada, ignorando inclinação ~7°)
+  return normalizeDeg(trueAnomaly + omega + node);
+}
+
 /* ── Ângulos ── */
 
 function calculateAnglesForLat(date: Date, lon: number, lat: number): { ascendant: number; mc: number } {
@@ -140,6 +173,7 @@ export function calculateChart(date: Date, location: GeoLocation): ChartData {
 
   // Pontos virtuais
   const virtualPoints: { name: string; longitude: number }[] = [
+    { name: 'Chiron',    longitude: calculateChiron(date) },
     { name: 'Lilith',    longitude: calculateMeanLilith(date) },
     { name: 'NorthNode', longitude: calculateNorthNode(date) },
     { name: 'SouthNode', longitude: normalizeDeg(calculateNorthNode(date) + 180) },
