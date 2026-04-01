@@ -285,6 +285,15 @@ function GeneralInfoCard() {
           <p><strong>Nodo Sul ☋</strong> — Habilidades trazidas de vidas passadas. Zona de conforto a ser transcendida.</p>
           <p><strong>Vertex</strong> — Ponto de encontros fatídicos. Associado a eventos e pessoas que entram em nossa vida de forma inesperada.</p>
         </div>
+        <div className="info-section">
+          <h4>Tattwas</h4>
+          <p>Os Tattwas são os 5 elementos sutis do sistema tântrico. No App, o ciclo se inicia ao nascer do sol e cada Tattwa dura 24 minutos, totalizando um ciclo de 120 minutos que se repete continuamente:</p>
+          <p><strong>Akasha</strong> (Éter) → <strong>Vayu</strong> (Ar) → <strong>Tejas</strong> (Fogo) → <strong>Prithvi</strong> (Terra) → <strong>Apas</strong> (Água)</p>
+          <p>Cada Tattwa principal contém 5 sub-tattwas de 4,8 minutos cada, na mesma sequência.</p>
+          <p style={{ color: '#c9a84c', fontSize: '0.75rem', marginTop: 8, fontStyle: 'italic' }}>
+            OBS.: A sequência dos Tattwas utilizada neste App segue a tradição de Swami Satyananda Saraswati (Tattwa Shuddhi), baseada na ordem de emanação cosmológica do Samkhya. Outras linhagens podem usar ordenações diferentes.
+          </p>
+        </div>
       </IonCardContent>
     </IonCard>
   );

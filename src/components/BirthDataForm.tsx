@@ -156,9 +156,6 @@ const BirthDataForm: React.FC<BirthDataFormProps> = ({ date, location, onDateCha
               />
             </IonItem>
           </IonCol>
-          <IonCol size="auto" className="tattwa-col">
-            <TattwaIndicator tattwa={tattwa} />
-          </IonCol>
           <IonCol size="auto">
             <IonButton fill="clear" size="small" className="arrow-btn" onClick={() => adjustHour(1)}>
               <IonIcon icon={chevronForward} />
@@ -176,6 +173,13 @@ const BirthDataForm: React.FC<BirthDataFormProps> = ({ date, location, onDateCha
             <span className="minute-label">1 min</span>
             <IonIcon icon={chevronForward} />
           </IonButton>
+        </IonRow>
+
+        {/* Tattwa abaixo dos controles de horário */}
+        <IonRow className="ion-justify-content-center">
+          <IonCol size="auto" className="tattwa-col">
+            <TattwaIndicator tattwa={tattwa} />
+          </IonCol>
         </IonRow>
 
         {/* Busca de localização */}
