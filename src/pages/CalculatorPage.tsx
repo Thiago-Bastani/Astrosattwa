@@ -37,6 +37,7 @@ const CalculatorPage: React.FC = () => {
   const [progress, setProgress] = useState<SearchProgress | null>(null);
   const [result, setResult] = useState<SearchResult | null>(null);
   const [noResult, setNoResult] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   /* ── Location search ── */
@@ -58,21 +59,38 @@ const CalculatorPage: React.FC = () => {
   /* ── Condition management ── */
 
   function handleAddRule(rule: ConditionRule) {
-    setConditionSet(prev => ({
-      groups: prev.groups.map(g =>
-        g.id === (activeGroupId || prev.groups[0]?.id)
-          ? { ...g, rules: [...g.rules, rule] }
-          : g
-      ),
-    }));
+    setConditionSet(prev => {
+      const targetId = activeGroupId || prev.groups[0]?.id;
+      const hasTarget = prev.groups.some(g => g.id === targetId);
+      if (hasTarget) {
+        return {
+          groups: prev.groups.map(g =>
+            g.id === targetId ? { ...g, rules: [...g.rules, rule] } : g
+          ),
+        };
+      }
+      // Fallback: adiciona ao primeiro grupo, ou cria um novo se não existir
+      if (prev.groups.length > 0) {
+        return {
+          groups: prev.groups.map((g, i) =>
+            i === 0 ? { ...g, rules: [...g.rules, rule] } : g
+          ),
+        };
+      }
+      return {
+        groups: [{ id: uuid(), operator: 'AND' as const, rules: [rule] }],
+      };
+    });
   }
 
   function handleRemoveRule(groupId: string, ruleId: string) {
-    setConditionSet(prev => ({
-      groups: prev.groups
+    setConditionSet(prev => {
+      const updated = prev.groups
         .map(g => g.id === groupId ? { ...g, rules: g.rules.filter(r => r.id !== ruleId) } : g)
-        .filter(g => g.rules.length > 0 || prev.groups.indexOf(g) === 0),
-    }));
+        .filter((g, i) => g.rules.length > 0 || i === 0);
+      // Garante que sempre existe pelo menos um grupo
+      return { groups: updated.length > 0 ? updated : [{ id: uuid(), operator: 'AND' as const, rules: [] }] };
+    });
   }
 
   function handleAddOrGroup() {
@@ -108,26 +126,31 @@ const CalculatorPage: React.FC = () => {
     setIsSearching(true);
     setResult(null);
     setNoResult(false);
+    setError(null);
 
     const controller = new AbortController();
     abortRef.current = controller;
 
-    const found = await findNextMatchingDate(
-      conditionSet,
-      location,
-      new Date(startDateStr + 'T00:00:00'),
-      maxDays,
-      (p) => setProgress(p),
-      controller.signal,
-    );
+    try {
+      const found = await findNextMatchingDate(
+        conditionSet,
+        location,
+        new Date(startDateStr + 'T00:00:00'),
+        maxDays,
+        (p) => setProgress(p),
+        controller.signal,
+      );
 
-    setIsSearching(false);
-    abortRef.current = null;
-
-    if (found) {
-      setResult(found);
-    } else {
-      setNoResult(true);
+      if (found) {
+        setResult(found);
+      } else {
+        setNoResult(true);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao calcular');
+    } finally {
+      setIsSearching(false);
+      abortRef.current = null;
     }
   }
 
@@ -291,6 +314,14 @@ const CalculatorPage: React.FC = () => {
           <div className="calc-section">
             <div className="calc-no-result">
               Nenhuma data encontrada nos próximos {maxDays} dias que satisfaça todas as condições.
+            </div>
+          </div>
+        )}
+
+        {error && !isSearching && (
+          <div className="calc-section">
+            <div className="calc-no-result" style={{ color: 'rgba(231, 76, 60, 0.8)' }}>
+              Erro: {error}
             </div>
           </div>
         )}

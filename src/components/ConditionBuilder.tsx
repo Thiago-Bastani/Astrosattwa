@@ -93,7 +93,7 @@ const ConditionBuilder: React.FC<Props> = ({ isOpen, onClose, onAdd, targetGroup
     setSelectedAspect(null);
   }
 
-  function handleClose() {
+  function handleDismiss() {
     reset();
     onClose();
   }
@@ -107,7 +107,7 @@ const ConditionBuilder: React.FC<Props> = ({ isOpen, onClose, onAdd, targetGroup
       label: buildConditionLabel(target, condition),
     };
     onAdd(rule);
-    handleClose();
+    onClose();
   }
 
   function goBack() {
@@ -116,7 +116,7 @@ const ConditionBuilder: React.FC<Props> = ({ isOpen, onClose, onAdd, targetGroup
       case 'category': setStep('target'); setTarget(null); break;
       case 'value': setStep('category'); setCategory(null); break;
       case 'aspect-body': setStep('value'); setSelectedAspect(null); break;
-      default: handleClose();
+      default: onClose();
     }
   }
 
@@ -493,11 +493,11 @@ const ConditionBuilder: React.FC<Props> = ({ isOpen, onClose, onAdd, targetGroup
   };
 
   return (
-    <IonModal isOpen={isOpen} onDidDismiss={handleClose} className="builder-modal"
+    <IonModal isOpen={isOpen} onDidDismiss={handleDismiss} className="builder-modal"
       breakpoints={[0, 1]} initialBreakpoint={1}>
       <div className="builder-header">
         <button className="builder-back" onClick={goBack}>
-          {step === 'target' ? 'Fechar' : '← Voltar'}
+          {step === 'target' ? 'Fechar' : '\u2190 Voltar'}
         </button>
         <span className="builder-title">{stepTitles[step]}</span>
         <div style={{ width: 48 }} />
