@@ -5,9 +5,11 @@ import type { ConditionSet, ConditionRule, SearchResult, SearchProgress } from '
 import { searchLocation } from '../services/geocodingService';
 import { findNextMatchingDate } from '../services/dateSearcher';
 import { PLANET_COLORS, PLANET_GLYPHS, ZODIAC_SIGNS } from '../utils/zodiac';
-import { PLANET_NAMES_PT, SIGN_NAMES_PT } from '../utils/astroLabels';
+import { PLANET_NAMES_PT, SIGN_NAMES_PT, ANGLE_NAMES_PT } from '../utils/astroLabels';
+import { getZodiacSign } from '../utils/zodiac';
 import ConditionChips from '../components/ConditionChips';
 import ConditionBuilder from '../components/ConditionBuilder';
+import AspectGrid from '../components/AspectGrid';
 import './CalculatorPage.css';
 
 const WEEKDAYS = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
@@ -222,19 +224,19 @@ const CalculatorPage: React.FC = () => {
 
         {/* ── Calculate ── */}
         <div className="calc-section">
-          <div className="calc-section-title">Busca</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-            <span style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.5)', whiteSpace: 'nowrap' }}>A partir de</span>
+          <div className="calc-section-title" style={{ textAlign: 'center' }}>Busca</div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, marginBottom: 12 }}>
+            <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.5px' }}>A partir de</span>
             <input
               type="date"
               value={startDateStr}
               onChange={e => setStartDateStr(e.target.value)}
               className="location-search-input"
-              style={{ flex: 1, textAlign: 'center' }}
+              style={{ width: '100%', textAlign: 'center' }}
             />
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-            <span style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.5)', whiteSpace: 'nowrap' }}>Limite</span>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, marginBottom: 12 }}>
+            <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.5px' }}>Limite (dias)</span>
             <input
               type="number"
               min={1}
@@ -242,9 +244,8 @@ const CalculatorPage: React.FC = () => {
               value={maxDays}
               onChange={e => setMaxDays(Math.max(1, parseInt(e.target.value) || 365))}
               className="location-search-input"
-              style={{ width: 90, flex: 'none', textAlign: 'center' }}
+              style={{ width: 120, textAlign: 'center' }}
             />
-            <span style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.5)' }}>dias</span>
           </div>
           {!location && totalRules > 0 && (
             <div style={{ fontSize: '0.75rem', color: 'rgba(231, 76, 60, 0.7)', marginBottom: 8 }}>
@@ -287,7 +288,7 @@ const CalculatorPage: React.FC = () => {
               </div>
 
               <div className="calc-planet-list">
-                {result.chart.planets.filter(p => !p.isVirtual).map(p => {
+                {result.chart.planets.map(p => {
                   const signInfo = ZODIAC_SIGNS.find(s => s.name === p.zodiacSign);
                   return (
                     <div key={p.name} className="calc-planet-row">
@@ -305,7 +306,29 @@ const CalculatorPage: React.FC = () => {
                     </div>
                   );
                 })}
+                {/* Ângulos: AC, DC, MC, IC */}
+                {([
+                  { key: 'Ascendant', label: 'AC', lon: result.chart.ascendant },
+                  { key: 'Descendant', label: 'DC', lon: result.chart.descendant },
+                  { key: 'MC', label: 'MC', lon: result.chart.mc },
+                  { key: 'IC', label: 'IC', lon: result.chart.ic },
+                ] as const).map(a => {
+                  const info = getZodiacSign(a.lon);
+                  return (
+                    <div key={a.key} className="calc-planet-row">
+                      <span className="calc-planet-glyph" style={{ color: '#c9a84c' }}>{a.label}</span>
+                      <span className="calc-planet-name">{ANGLE_NAMES_PT[a.key]}</span>
+                      <span className="calc-planet-sign" style={{ color: info.sign.color }}>
+                        {info.sign.glyph} {SIGN_NAMES_PT[info.sign.name]}
+                      </span>
+                      <span className="calc-planet-deg">
+                        {info.degree}°{String(info.minute).padStart(2, '0')}'
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
+              <AspectGrid planets={result.chart.planets} />
             </div>
           </div>
         )}
