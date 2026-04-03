@@ -1,20 +1,9 @@
 import React from 'react';
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonCard, IonCardHeader, IonCardTitle, IonCardContent } from '@ionic/react';
 import { ZODIAC_SIGNS, PLANET_GLYPHS, PLANET_COLORS, DIGNITY_TABLE } from '../utils/zodiac';
+import { PLANET_NAMES_PT, SIGN_NAMES_PT } from '../utils/astroLabels';
 import { ZODIAC_SVG_PATHS } from '../utils/zodiacSvgPaths';
 import './ReferencePage.css';
-
-const PLANET_NAMES_PT: Record<string, string> = {
-  Sun: 'Sol', Moon: 'Lua', Mercury: 'Mercúrio', Venus: 'Vênus', Mars: 'Marte',
-  Jupiter: 'Júpiter', Saturn: 'Saturno', Uranus: 'Urano', Neptune: 'Netuno', Pluto: 'Plutão',
-  Chiron: 'Quíron',
-};
-
-const SIGN_NAMES_PT: Record<string, string> = {
-  Aries: 'Áries', Taurus: 'Touro', Gemini: 'Gêmeos', Cancer: 'Câncer',
-  Leo: 'Leão', Virgo: 'Virgem', Libra: 'Libra', Scorpio: 'Escorpião',
-  Sagittarius: 'Sagitário', Capricorn: 'Capricórnio', Aquarius: 'Aquário', Pisces: 'Peixes',
-};
 
 const ELEMENT_NAMES: Record<string, { pt: string; color: string }> = {
   fire:  { pt: 'Fogo',  color: '#e74c3c' },

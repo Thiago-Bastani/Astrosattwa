@@ -1,0 +1,277 @@
+.calculator-content {
+  --background: #0a0a2e;
+}
+
+.calc-section {
+  padding: 12px 16px;
+}
+
+.calc-section-title {
+  font-size: 0.72rem;
+  color: rgba(201, 168, 76, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+/* ── Location picker ── */
+
+.location-search-row {
+  display: flex;
+  gap: 8px;
+}
+
+.location-search-input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: #ecf0f1;
+  font-size: 0.85rem;
+  outline: none;
+}
+
+.location-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.25);
+}
+
+.location-search-input:focus {
+  border-color: rgba(201, 168, 76, 0.4);
+}
+
+.location-search-btn {
+  background: rgba(201, 168, 76, 0.15);
+  border: 1px solid rgba(201, 168, 76, 0.3);
+  border-radius: 10px;
+  color: #c9a84c;
+  padding: 0 14px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.location-search-btn:active {
+  background: rgba(201, 168, 76, 0.25);
+}
+
+.location-results {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.location-result-item {
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.8rem;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+
+.location-result-item:active {
+  background: rgba(201, 168, 76, 0.1);
+  border-color: rgba(201, 168, 76, 0.3);
+}
+
+.location-selected {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(201, 168, 76, 0.08);
+  border: 1px solid rgba(201, 168, 76, 0.2);
+  border-radius: 8px;
+  margin-top: 8px;
+}
+
+.location-selected .loc-name {
+  font-size: 0.8rem;
+  color: #ecf0f1;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.location-selected .loc-coords {
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.35);
+  flex-shrink: 0;
+}
+
+.location-selected .loc-clear {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+/* ── Add condition button ── */
+
+.add-condition-btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(201, 168, 76, 0.1);
+  border: 1px dashed rgba(201, 168, 76, 0.35);
+  color: #c9a84c;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.add-condition-btn:active {
+  background: rgba(201, 168, 76, 0.2);
+}
+
+/* ── Calculate button ── */
+
+.calc-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  background: #c9a84c;
+  border: none;
+  color: #0a0a2e;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+}
+
+.calc-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.calc-btn:not(:disabled):active {
+  background: #b89a3e;
+}
+
+/* ── Progress ── */
+
+.calc-progress {
+  padding: 12px 0;
+}
+
+.calc-progress-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.calc-progress-date {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.calc-cancel-btn {
+  background: rgba(231, 76, 60, 0.15);
+  border: 1px solid rgba(231, 76, 60, 0.3);
+  border-radius: 8px;
+  color: #e74c3c;
+  font-size: 0.78rem;
+  padding: 4px 12px;
+  cursor: pointer;
+}
+
+/* ── Result ── */
+
+.calc-result {
+  padding: 16px;
+  background: rgba(201, 168, 76, 0.06);
+  border: 1px solid rgba(201, 168, 76, 0.2);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.calc-result-label {
+  font-size: 0.75rem;
+  color: rgba(201, 168, 76, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.calc-result-date {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #c9a84c;
+  font-family: 'Georgia', serif;
+}
+
+.calc-result-time {
+  font-size: 1.1rem;
+  color: #ecf0f1;
+  margin-top: 4px;
+}
+
+.calc-result-weekday {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 4px;
+}
+
+.calc-no-result {
+  padding: 20px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.85rem;
+}
+
+/* ── Planet list in result ── */
+
+.calc-planet-list {
+  margin-top: 16px;
+}
+
+.calc-planet-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.calc-planet-glyph {
+  font-size: 1rem;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.calc-planet-name {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.6);
+  width: 70px;
+  flex-shrink: 0;
+}
+
+.calc-planet-sign {
+  font-size: 0.78rem;
+  color: #ecf0f1;
+  flex: 1;
+}
+
+.calc-planet-deg {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.4);
+  flex-shrink: 0;
+}
+
+.calc-planet-retro {
+  color: #e74c3c;
+  font-size: 0.72rem;
+}

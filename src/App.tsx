@@ -10,9 +10,10 @@ import {
   setupIonicReact
 } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
-import { planetOutline, bookOutline } from 'ionicons/icons';
+import { planetOutline, bookOutline, calculatorOutline } from 'ionicons/icons';
 import MandalaPage from './pages/MandalaPage';
 import ReferencePage from './pages/ReferencePage';
+import CalculatorPage from './pages/CalculatorPage';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -44,6 +45,7 @@ const App: React.FC = () => (
         <IonRouterOutlet>
           <Route exact path="/mandala" component={MandalaPage} />
           <Route exact path="/referencia" component={ReferencePage} />
+          <Route exact path="/calculadora" component={CalculatorPage} />
           <Redirect exact from="/" to="/mandala" />
         </IonRouterOutlet>
         <IonTabBar slot="bottom" style={{ '--background': '#000000', '--color': '#7f8c8d', '--color-selected': '#c9a84c' } as any}>
@@ -54,6 +56,10 @@ const App: React.FC = () => (
           <IonTabButton tab="referencia" href="/referencia">
             <IonIcon icon={bookOutline} />
             <IonLabel>Referência</IonLabel>
+          </IonTabButton>
+          <IonTabButton tab="calculadora" href="/calculadora">
+            <IonIcon icon={calculatorOutline} />
+            <IonLabel>Calculadora</IonLabel>
           </IonTabButton>
         </IonTabBar>
       </IonTabs>

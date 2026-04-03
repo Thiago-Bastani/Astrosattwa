@@ -1,0 +1,100 @@
+.chips-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.condition-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.condition-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: rgba(201, 168, 76, 0.12);
+  border: 1px solid rgba(201, 168, 76, 0.35);
+  border-radius: 20px;
+  font-size: 0.82rem;
+  color: #ecf0f1;
+  max-width: 100%;
+}
+
+.condition-chip .chip-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+.condition-chip .chip-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.condition-chip .chip-remove:active {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.logic-operator {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: rgba(201, 168, 76, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 2px 8px;
+}
+
+.group-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.group-divider .divider-line {
+  flex: 1;
+  height: 1px;
+  background: rgba(201, 168, 76, 0.2);
+}
+
+.group-divider .divider-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: rgba(201, 168, 76, 0.6);
+  letter-spacing: 1px;
+}
+
+.or-group-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px dashed rgba(201, 168, 76, 0.3);
+  color: rgba(201, 168, 76, 0.7);
+  font-size: 0.75rem;
+  cursor: pointer;
+  margin-top: 4px;
+}
+
+.or-group-btn:active {
+  background: rgba(201, 168, 76, 0.1);
+}

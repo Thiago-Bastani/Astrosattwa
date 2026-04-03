@@ -1,0 +1,225 @@
+.builder-modal {
+  --background: #1a1a2e;
+  --height: 100%;
+}
+
+.builder-modal ion-content {
+  --overflow: auto;
+}
+
+.builder-toolbar {
+  --background: #1a1a2e;
+  --color: #ecf0f1;
+}
+
+.builder-content {
+  --background: #1a1a2e;
+}
+
+.builder-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.builder-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #c9a84c;
+}
+
+.builder-back {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.builder-back:active {
+  color: #c9a84c;
+}
+
+.builder-step-label {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.35);
+  padding: 12px 16px 4px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ── Seção de grupo (Planetas, Pontos, etc.) ── */
+
+.builder-section-title {
+  font-size: 0.72rem;
+  color: rgba(201, 168, 76, 0.7);
+  padding: 12px 16px 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+/* ── Lista de opções (para targets lineares) ── */
+
+.builder-list {
+  padding: 0 12px;
+}
+
+.builder-list-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.builder-list-item:active {
+  background: rgba(201, 168, 76, 0.12);
+}
+
+.builder-list-item .item-glyph {
+  font-size: 1.2rem;
+  width: 28px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.builder-list-item .item-name {
+  font-size: 0.9rem;
+  color: #ecf0f1;
+}
+
+.builder-list-item .item-sub {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.35);
+  margin-left: auto;
+}
+
+/* ── Grid de botões (signos, casas, etc.) ── */
+
+.builder-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding: 8px 16px;
+}
+
+.builder-grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.builder-grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.builder-grid-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 12px 4px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  transition: all 0.15s;
+  min-height: 64px;
+}
+
+.builder-grid-btn:active {
+  background: rgba(201, 168, 76, 0.15);
+  border-color: rgba(201, 168, 76, 0.4);
+}
+
+.builder-grid-btn .btn-glyph {
+  font-size: 1.3rem;
+}
+
+.builder-grid-btn .btn-label {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+  line-height: 1.2;
+}
+
+.builder-grid-btn .btn-sub {
+  font-size: 0.6rem;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* ── Categorias (Step 2) ── */
+
+.category-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 16px;
+}
+
+.category-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.category-card:active {
+  background: rgba(201, 168, 76, 0.12);
+  border-color: rgba(201, 168, 76, 0.3);
+}
+
+.category-card .cat-icon {
+  font-size: 1.1rem;
+  width: 32px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.category-card .cat-name {
+  font-size: 0.9rem;
+  color: #ecf0f1;
+  font-weight: 500;
+}
+
+.category-card .cat-desc {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 2px;
+}
+
+/* ── Resumo do target selecionado ── */
+
+.selected-target {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  margin: 0 16px 8px;
+  background: rgba(201, 168, 76, 0.08);
+  border-radius: 8px;
+  border: 1px solid rgba(201, 168, 76, 0.2);
+}
+
+.selected-target .target-label {
+  font-size: 0.8rem;
+  color: #c9a84c;
+}
+
+/* ── Sub-picker (para derivados) ── */
+
+.sub-picker-label {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+  padding: 8px 16px;
+}
