@@ -71,6 +71,24 @@
   color: rgba(201, 168, 76, 0.55);
 }
 
+.moon-phase-divider {
+  color: rgba(201, 168, 76, 0.3);
+  font-size: 0.8rem;
+}
+
+.moon-phase-mansion-num {
+  font-family: serif;
+  font-size: 0.72rem;
+  color: rgba(201, 168, 76, 0.55);
+}
+
+.moon-phase-mansion-name {
+  font-family: serif;
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  color: #c9a84c;
+}
+
 .mandala-chart {
   filter: drop-shadow(0 0 24px rgba(201, 168, 76, 0.15));
 }

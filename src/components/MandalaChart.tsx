@@ -80,6 +80,9 @@ const MandalaChart: React.FC<MandalaChartProps> = ({ data, size = 500, zodiacSys
         <span className="moon-phase-emoji">{data.moonPhase.emoji}</span>
         <span className="moon-phase-name">{data.moonPhase.name}</span>
         <span className="moon-phase-illumination">{data.moonPhase.illumination}% iluminada</span>
+        <span className="moon-phase-divider">·</span>
+        <span className="moon-phase-mansion-num">{data.moonPhase.lunarMansion.number}ª</span>
+        <span className="moon-phase-mansion-name">{data.moonPhase.lunarMansion.name}</span>
       </div>
     </div>
   );

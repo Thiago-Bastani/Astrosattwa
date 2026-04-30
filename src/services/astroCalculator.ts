@@ -1,5 +1,5 @@
 import * as Astronomy from 'astronomy-engine';
-import type { GeoLocation, ChartData, PlanetPosition, MoonPhase } from '../types/astro';
+import type { GeoLocation, ChartData, PlanetPosition, MoonPhase, LunarMansion } from '../types/astro';
 import { getZodiacSign, getDecanate, getDignity, getHouseFromLongitude, getSignRuler, getRulerSignDignities, PLANET_GLYPHS } from '../utils/zodiac';
 
 const PLANET_BODIES: { name: string; body: string }[] = [
@@ -146,10 +146,25 @@ function calculateVertex(date: Date, location: GeoLocation): number {
   return normalizeDeg(ascendant + 180);
 }
 
+/* ── Mansão Lunar (Nakshatras) ── */
+
+const NAKSHATRAS: string[] = [
+  'Ashwini', 'Bharani', 'Krittika', 'Rohini', 'Mrigashira', 'Ardra',
+  'Punarvasu', 'Pushya', 'Ashlesha', 'Magha', 'Purva Phalguni', 'Uttara Phalguni',
+  'Hasta', 'Chitra', 'Swati', 'Vishakha', 'Anuradha', 'Jyeshtha',
+  'Mula', 'Purva Ashadha', 'Uttara Ashadha', 'Shravana', 'Dhanishtha',
+  'Shatabhisha', 'Purva Bhadrapada', 'Uttara Bhadrapada', 'Revati',
+];
+
+function calculateLunarMansion(moonSiderealLon: number): LunarMansion {
+  const index = Math.floor(moonSiderealLon / (360 / 27)) % 27;
+  return { number: index + 1, name: NAKSHATRAS[index] };
+}
+
 /* ── Fase da Lua ── */
 
-function calculateMoonPhase(date: Date): MoonPhase {
-  // Usa longitudes tropicais — a diferença Sol/Lua é idêntica em qualquer sistema
+function calculateMoonPhase(date: Date, ayanamsa: number): MoonPhase {
+  // Diferença Sol/Lua é igual em qualquer sistema (ayanamsa cancela)
   const sunLon  = getPlanetLongitude('Sun', date);
   const moonLon = getPlanetLongitude('Moon', date);
   const angle   = normalizeDeg(moonLon - sunLon);
@@ -158,16 +173,20 @@ function calculateMoonPhase(date: Date): MoonPhase {
   let name: string;
   let emoji: string;
 
-  if (angle < 22.5 || angle >= 337.5)       { name = 'Lua Nova';            emoji = '🌑'; }
-  else if (angle < 67.5)                     { name = 'Crescente';           emoji = '🌒'; }
-  else if (angle < 112.5)                    { name = 'Quarto Crescente';    emoji = '🌓'; }
-  else if (angle < 157.5)                    { name = 'Gibosa Crescente';    emoji = '🌔'; }
-  else if (angle < 202.5)                    { name = 'Lua Cheia';           emoji = '🌕'; }
-  else if (angle < 247.5)                    { name = 'Gibosa Minguante';    emoji = '🌖'; }
-  else if (angle < 292.5)                    { name = 'Quarto Minguante';    emoji = '🌗'; }
-  else                                       { name = 'Minguante';           emoji = '🌘'; }
+  if (angle < 22.5 || angle >= 337.5)  { name = 'Lua Nova';          emoji = '🌑'; }
+  else if (angle < 67.5)               { name = 'Crescente';          emoji = '🌒'; }
+  else if (angle < 112.5)              { name = 'Quarto Crescente';   emoji = '🌓'; }
+  else if (angle < 157.5)              { name = 'Gibosa Crescente';   emoji = '🌔'; }
+  else if (angle < 202.5)              { name = 'Lua Cheia';          emoji = '🌕'; }
+  else if (angle < 247.5)              { name = 'Gibosa Minguante';   emoji = '🌖'; }
+  else if (angle < 292.5)              { name = 'Quarto Minguante';   emoji = '🌗'; }
+  else                                 { name = 'Minguante';          emoji = '🌘'; }
 
-  return { name, emoji, illumination, angle };
+  // Nakshatra usa longitude sideral da Lua
+  const moonSidereal = normalizeDeg(moonLon - ayanamsa);
+  const lunarMansion = calculateLunarMansion(moonSidereal);
+
+  return { name, emoji, illumination, angle, lunarMansion };
 }
 
 /* ── Chart principal ── */
@@ -243,7 +262,7 @@ export function calculateChart(date: Date, location: GeoLocation, zodiacSystem: 
     });
   }
 
-  const moonPhase = calculateMoonPhase(date);
+  const moonPhase = calculateMoonPhase(date, ayanamsa);
 
   return { planets, houseCusps, ascendant, mc, descendant, ic, moonPhase, zodiacSystem };
 }

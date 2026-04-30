@@ -22,11 +22,17 @@ export interface PlanetPosition {
   rulerSignDignities?: { sign: string; dignity: DignityType }[];
 }
 
+export interface LunarMansion {
+  number: number; // 1–27
+  name: string;   // nome sânscrito
+}
+
 export interface MoonPhase {
   name: string;
   emoji: string;
   illumination: number; // 0–100 %
   angle: number;        // 0–360 °
+  lunarMansion: LunarMansion;
 }
 
 export type ZodiacSystem = 'sidereal' | 'tropical';
