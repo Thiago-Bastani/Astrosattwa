@@ -17,6 +17,16 @@ const PLANET_BODIES: { name: string; body: string }[] = [
 
 const DEG = Math.PI / 180;
 
+/**
+ * Lahiri (Chitrapaksha) ayanamsa — padrão oficial da astrologia indiana (IAU).
+ * Converte longitude tropical → sideral: sidereal = tropical - ayanamsa
+ */
+function calculateLahiriAyanamsa(date: Date): number {
+  const T = dateToJulianCenturies(date);
+  // 23.85° em J2000.0, precessão de ~1.3972°/século
+  return 23.85 + 1.3972 * T;
+}
+
 function getPlanetLongitude(bodyName: string, date: Date): number {
   const time = Astronomy.MakeTime(date);
 
@@ -139,16 +149,20 @@ function calculateVertex(date: Date, location: GeoLocation): number {
 /* ── Chart principal ── */
 
 export function calculateChart(date: Date, location: GeoLocation): ChartData {
-  // Ângulos (calcular primeiro para ter as casas)
-  const { ascendant, mc } = calculateAnglesForLat(date, location.lon, location.lat);
+  const ayanamsa = calculateLahiriAyanamsa(date);
+
+  // Ângulos (calcular primeiro para ter as casas) — convertidos para sideral
+  const tropAngles = calculateAnglesForLat(date, location.lon, location.lat);
+  const ascendant = normalizeDeg(tropAngles.ascendant - ayanamsa);
+  const mc = normalizeDeg(tropAngles.mc - ayanamsa);
   const descendant = normalizeDeg(ascendant + 180);
   const ic = normalizeDeg(mc + 180);
 
   const houseCusps = Array.from({ length: 12 }, (_, i) => normalizeDeg(ascendant + i * 30));
 
-  // Planetas reais
+  // Planetas reais — longitudes convertidas para sideral
   const planets: PlanetPosition[] = PLANET_BODIES.map(({ name, body }) => {
-    const longitude = getPlanetLongitude(body, date);
+    const longitude = normalizeDeg(getPlanetLongitude(body, date) - ayanamsa);
     const { sign, degree, minute } = getZodiacSign(longitude);
     const house = getHouseFromLongitude(longitude, houseCusps);
     const houseSign = getZodiacSign(houseCusps[house - 1]).sign.name;
@@ -171,13 +185,13 @@ export function calculateChart(date: Date, location: GeoLocation): ChartData {
     };
   });
 
-  // Pontos virtuais
+  // Pontos virtuais — longitudes convertidas para sideral
   const virtualPoints: { name: string; longitude: number }[] = [
-    { name: 'Chiron',    longitude: calculateChiron(date) },
-    { name: 'Lilith',    longitude: calculateMeanLilith(date) },
-    { name: 'NorthNode', longitude: calculateNorthNode(date) },
-    { name: 'SouthNode', longitude: normalizeDeg(calculateNorthNode(date) + 180) },
-    { name: 'Vertex',    longitude: calculateVertex(date, location) },
+    { name: 'Chiron',    longitude: normalizeDeg(calculateChiron(date) - ayanamsa) },
+    { name: 'Lilith',    longitude: normalizeDeg(calculateMeanLilith(date) - ayanamsa) },
+    { name: 'NorthNode', longitude: normalizeDeg(calculateNorthNode(date) - ayanamsa) },
+    { name: 'SouthNode', longitude: normalizeDeg(calculateNorthNode(date) + 180 - ayanamsa) },
+    { name: 'Vertex',    longitude: normalizeDeg(calculateVertex(date, location) - ayanamsa) },
   ];
 
   for (const vp of virtualPoints) {
