@@ -22,6 +22,15 @@ export interface PlanetPosition {
   rulerSignDignities?: { sign: string; dignity: DignityType }[];
 }
 
+export interface MoonPhase {
+  name: string;
+  emoji: string;
+  illumination: number; // 0–100 %
+  angle: number;        // 0–360 °
+}
+
+export type ZodiacSystem = 'sidereal' | 'tropical';
+
 export interface ChartData {
   planets: PlanetPosition[];
   houseCusps: number[];
@@ -29,6 +38,8 @@ export interface ChartData {
   mc: number;
   descendant: number;
   ic: number;
+  moonPhase: MoonPhase;
+  zodiacSystem: ZodiacSystem;
 }
 
 export interface NominatimResult {

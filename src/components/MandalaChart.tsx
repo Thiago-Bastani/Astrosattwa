@@ -1,5 +1,5 @@
 import React from 'react';
-import type { ChartData } from '../types/astro';
+import type { ChartData, ZodiacSystem } from '../types/astro';
 import ZodiacRing from './ZodiacRing';
 import HouseGrid from './HouseGrid';
 import PlanetMarker from './PlanetMarker';
@@ -8,9 +8,11 @@ import './MandalaChart.css';
 interface MandalaChartProps {
   data: ChartData;
   size?: number;
+  zodiacSystem: ZodiacSystem;
+  onZodiacSystemChange: (system: ZodiacSystem) => void;
 }
 
-const MandalaChart: React.FC<MandalaChartProps> = ({ data, size = 500 }) => {
+const MandalaChart: React.FC<MandalaChartProps> = ({ data, size = 500, zodiacSystem, onZodiacSystemChange }) => {
   const margin = size * 0.1;
   const viewSize = size + margin * 2;
   const cx = viewSize / 2;
@@ -31,6 +33,20 @@ const MandalaChart: React.FC<MandalaChartProps> = ({ data, size = 500 }) => {
 
   return (
     <div className="mandala-chart-container">
+      <div className="zodiac-system-toggle">
+        <button
+          className={`zodiac-btn ${zodiacSystem === 'sidereal' ? 'active' : ''}`}
+          onClick={() => onZodiacSystemChange('sidereal')}
+        >
+          Sideral
+        </button>
+        <button
+          className={`zodiac-btn ${zodiacSystem === 'tropical' ? 'active' : ''}`}
+          onClick={() => onZodiacSystemChange('tropical')}
+        >
+          Tropical
+        </button>
+      </div>
       <svg
         viewBox={`0 0 ${viewSize} ${viewSize}`}
         width="100%"
@@ -59,6 +75,12 @@ const MandalaChart: React.FC<MandalaChartProps> = ({ data, size = 500 }) => {
         {/* Center dot */}
         <circle cx={cx} cy={cy} r={2.5} fill="#c9a84c" />
       </svg>
+
+      <div className="moon-phase">
+        <span className="moon-phase-emoji">{data.moonPhase.emoji}</span>
+        <span className="moon-phase-name">{data.moonPhase.name}</span>
+        <span className="moon-phase-illumination">{data.moonPhase.illumination}% iluminada</span>
+      </div>
     </div>
   );
 };

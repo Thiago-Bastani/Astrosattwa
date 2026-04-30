@@ -5,7 +5,7 @@ import MandalaChart from '../components/MandalaChart';
 import PlanetList from '../components/PlanetList';
 import AspectGrid from '../components/AspectGrid';
 import { calculateChart } from '../services/astroCalculator';
-import type { GeoLocation } from '../types/astro';
+import type { GeoLocation, ZodiacSystem } from '../types/astro';
 import './MandalaPage.css';
 
 const BELO_HORIZONTE: GeoLocation = {
@@ -17,8 +17,9 @@ const BELO_HORIZONTE: GeoLocation = {
 const MandalaPage: React.FC = () => {
   const [date, setDate] = useState<Date>(new Date());
   const [location, setLocation] = useState<GeoLocation>(BELO_HORIZONTE);
+  const [zodiacSystem, setZodiacSystem] = useState<ZodiacSystem>('sidereal');
 
-  const chartData = useMemo(() => calculateChart(date, location), [date, location]);
+  const chartData = useMemo(() => calculateChart(date, location, zodiacSystem), [date, location, zodiacSystem]);
 
   return (
     <IonPage>
@@ -34,7 +35,7 @@ const MandalaPage: React.FC = () => {
           onDateChange={setDate}
           onLocationChange={setLocation}
         />
-        <MandalaChart data={chartData} />
+        <MandalaChart data={chartData} zodiacSystem={zodiacSystem} onZodiacSystemChange={setZodiacSystem} />
         <PlanetList planets={chartData.planets} />
         <AspectGrid planets={chartData.planets} />
         <div style={{ height: 80 }} />

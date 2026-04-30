@@ -1,5 +1,5 @@
 import * as Astronomy from 'astronomy-engine';
-import type { GeoLocation, ChartData, PlanetPosition } from '../types/astro';
+import type { GeoLocation, ChartData, PlanetPosition, MoonPhase } from '../types/astro';
 import { getZodiacSign, getDecanate, getDignity, getHouseFromLongitude, getSignRuler, getRulerSignDignities, PLANET_GLYPHS } from '../utils/zodiac';
 
 const PLANET_BODIES: { name: string; body: string }[] = [
@@ -146,12 +146,38 @@ function calculateVertex(date: Date, location: GeoLocation): number {
   return normalizeDeg(ascendant + 180);
 }
 
+/* ── Fase da Lua ── */
+
+function calculateMoonPhase(date: Date): MoonPhase {
+  // Usa longitudes tropicais — a diferença Sol/Lua é idêntica em qualquer sistema
+  const sunLon  = getPlanetLongitude('Sun', date);
+  const moonLon = getPlanetLongitude('Moon', date);
+  const angle   = normalizeDeg(moonLon - sunLon);
+  const illumination = Math.round((1 - Math.cos(angle * DEG)) / 2 * 100);
+
+  let name: string;
+  let emoji: string;
+
+  if (angle < 22.5 || angle >= 337.5)       { name = 'Lua Nova';            emoji = '🌑'; }
+  else if (angle < 67.5)                     { name = 'Crescente';           emoji = '🌒'; }
+  else if (angle < 112.5)                    { name = 'Quarto Crescente';    emoji = '🌓'; }
+  else if (angle < 157.5)                    { name = 'Gibosa Crescente';    emoji = '🌔'; }
+  else if (angle < 202.5)                    { name = 'Lua Cheia';           emoji = '🌕'; }
+  else if (angle < 247.5)                    { name = 'Gibosa Minguante';    emoji = '🌖'; }
+  else if (angle < 292.5)                    { name = 'Quarto Minguante';    emoji = '🌗'; }
+  else                                       { name = 'Minguante';           emoji = '🌘'; }
+
+  return { name, emoji, illumination, angle };
+}
+
 /* ── Chart principal ── */
 
-export function calculateChart(date: Date, location: GeoLocation): ChartData {
-  const ayanamsa = calculateLahiriAyanamsa(date);
+export type ZodiacSystem = 'sidereal' | 'tropical';
 
-  // Ângulos (calcular primeiro para ter as casas) — convertidos para sideral
+export function calculateChart(date: Date, location: GeoLocation, zodiacSystem: ZodiacSystem = 'sidereal'): ChartData {
+  const ayanamsa = zodiacSystem === 'sidereal' ? calculateLahiriAyanamsa(date) : 0;
+
+  // Ângulos — subtraí ayanamsa apenas no sistema sideral
   const tropAngles = calculateAnglesForLat(date, location.lon, location.lat);
   const ascendant = normalizeDeg(tropAngles.ascendant - ayanamsa);
   const mc = normalizeDeg(tropAngles.mc - ayanamsa);
@@ -160,7 +186,6 @@ export function calculateChart(date: Date, location: GeoLocation): ChartData {
 
   const houseCusps = Array.from({ length: 12 }, (_, i) => normalizeDeg(ascendant + i * 30));
 
-  // Planetas reais — longitudes convertidas para sideral
   const planets: PlanetPosition[] = PLANET_BODIES.map(({ name, body }) => {
     const longitude = normalizeDeg(getPlanetLongitude(body, date) - ayanamsa);
     const { sign, degree, minute } = getZodiacSign(longitude);
@@ -185,7 +210,7 @@ export function calculateChart(date: Date, location: GeoLocation): ChartData {
     };
   });
 
-  // Pontos virtuais — longitudes convertidas para sideral
+  // Pontos virtuais
   const virtualPoints: { name: string; longitude: number }[] = [
     { name: 'Chiron',    longitude: normalizeDeg(calculateChiron(date) - ayanamsa) },
     { name: 'Lilith',    longitude: normalizeDeg(calculateMeanLilith(date) - ayanamsa) },
@@ -218,5 +243,7 @@ export function calculateChart(date: Date, location: GeoLocation): ChartData {
     });
   }
 
-  return { planets, houseCusps, ascendant, mc, descendant, ic };
+  const moonPhase = calculateMoonPhase(date);
+
+  return { planets, houseCusps, ascendant, mc, descendant, ic, moonPhase, zodiacSystem };
 }
