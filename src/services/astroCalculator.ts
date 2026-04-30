@@ -163,7 +163,7 @@ function calculateLunarMansion(moonSiderealLon: number): LunarMansion {
 
 /* ── Fase da Lua ── */
 
-function calculateMoonPhase(date: Date, ayanamsa: number): MoonPhase {
+function calculateMoonPhase(date: Date): MoonPhase {
   // Diferença Sol/Lua é igual em qualquer sistema (ayanamsa cancela)
   const sunLon  = getPlanetLongitude('Sun', date);
   const moonLon = getPlanetLongitude('Moon', date);
@@ -182,8 +182,8 @@ function calculateMoonPhase(date: Date, ayanamsa: number): MoonPhase {
   else if (angle < 292.5)              { name = 'Quarto Minguante';   emoji = '🌗'; }
   else                                 { name = 'Minguante';          emoji = '🌘'; }
 
-  // Nakshatra usa longitude sideral da Lua
-  const moonSidereal = normalizeDeg(moonLon - ayanamsa);
+  // Nakshatra sempre usa Lahiri, independente do sistema zodiacal selecionado
+  const moonSidereal = normalizeDeg(moonLon - calculateLahiriAyanamsa(date));
   const lunarMansion = calculateLunarMansion(moonSidereal);
 
   return { name, emoji, illumination, angle, lunarMansion };
@@ -262,7 +262,7 @@ export function calculateChart(date: Date, location: GeoLocation, zodiacSystem: 
     });
   }
 
-  const moonPhase = calculateMoonPhase(date, ayanamsa);
+  const moonPhase = calculateMoonPhase(date);
 
   return { planets, houseCusps, ascendant, mc, descendant, ic, moonPhase, zodiacSystem };
 }
