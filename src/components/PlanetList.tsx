@@ -1,157 +1,178 @@
-import React from 'react';
-import { IonList, IonItem, IonLabel } from '@ionic/react';
-import type { PlanetPosition, DignityType } from '../types/astro';
-import { PLANET_COLORS, PLANET_GLYPHS, SIGN_RULERS } from '../utils/zodiac';
+import React, { useState } from 'react';
+import { IonIcon } from '@ionic/react';
+import { chevronDown } from 'ionicons/icons';
+import type { ChartData, PlanetPosition, DignityType } from '../types/astro';
+import { PLANET_COLORS, PLANET_GLYPHS, SIGN_RULERS, ZODIAC_SIGNS, getZodiacSign } from '../utils/zodiac';
+import { PLANET_NAMES_PT, SIGN_NAMES_PT } from '../utils/astroLabels';
+import './PlanetList.css';
 
 interface PlanetListProps {
-  planets: PlanetPosition[];
+  chart: ChartData;
 }
 
-const DIGNITY_LABELS: Record<string, { label: string; color: string }> = {
-  domicilio: { label: 'Domicílio', color: '#2ecc71' },
-  exaltacao: { label: 'Exaltação', color: '#f1c40f' },
-  queda:     { label: 'Queda',     color: '#e74c3c' },
-  exilio:    { label: 'Exílio',    color: '#95a5a6' },
+const DIGNITY_INFO: Record<string, { label: string; short: string; color: string }> = {
+  domicilio: { label: 'Domicílio', short: 'Dom', color: '#2ecc71' },
+  exaltacao: { label: 'Exaltação', short: 'Exa', color: '#f1c40f' },
+  queda:     { label: 'Queda',     short: 'Que', color: '#e74c3c' },
+  exilio:    { label: 'Exílio',    short: 'Exí', color: '#95a5a6' },
 };
 
-const PLANET_NAMES_PT: Record<string, string> = {
-  Sun:       'Sol',
-  Moon:      'Lua',
-  Mercury:   'Mercúrio',
-  Venus:     'Vênus',
-  Mars:      'Marte',
-  Jupiter:   'Júpiter',
-  Saturn:    'Saturno',
-  Uranus:    'Urano',
-  Neptune:   'Netuno',
-  Pluto:     'Plutão',
-  Lilith:    'Lilith',
-  NorthNode: 'Nodo Norte',
-  SouthNode: 'Nodo Sul',
-  Vertex:    'Vertex',
-  Chiron:    'Quíron',
-};
+const ORDINAL = ['', '1º', '2º', '3º'];
 
-function DignityBadge({ dignity }: { dignity: DignityType }) {
-  if (!dignity) return null;
-  const info = DIGNITY_LABELS[dignity];
-  if (!info) return null;
+function signInfo(name: string) {
+  return ZODIAC_SIGNS.find(s => s.name === name);
+}
+
+function Degree({ deg, min }: { deg: number; min: number }) {
+  return <>{deg}°{String(min).padStart(2, '0')}'</>;
+}
+
+function BodyRef({ name }: { name: string }) {
   return (
-    <span style={{
-      display: 'inline-block',
-      fontSize: '0.65rem',
-      padding: '1px 6px',
-      borderRadius: 4,
-      background: `${info.color}22`,
-      color: info.color,
-      border: `1px solid ${info.color}44`,
-      marginLeft: 4,
-    }}>
-      {info.label}
+    <span style={{ color: PLANET_COLORS[name] || '#aaa' }}>
+      {PLANET_GLYPHS[name]} {PLANET_NAMES_PT[name] || name}
     </span>
   );
 }
 
-function HouseRulerInfo({ house, houseRuler, rulerSignDignities }: { 
-  house?: number; 
-  houseRuler?: string; 
-  rulerSignDignities?: { sign: string; dignity: DignityType }[];
-}) {
-  if (!house || !houseRuler) return null;
-  
-  const rulerGlyph = PLANET_GLYPHS[houseRuler] || houseRuler;
-  const rulerColor = PLANET_COLORS[houseRuler] || '#aaa';
-  const rulerName = PLANET_NAMES_PT[houseRuler] || houseRuler;
-  
-  // Formatação das dignidades nos signos de domicílio do regente
-  let dignityText = '';
-  if (rulerSignDignities && rulerSignDignities.length > 0) {
-    const dignityInfo = rulerSignDignities.map(({ sign, dignity }) => {
-      const dignityLabel = dignity ? (DIGNITY_LABELS[dignity]?.label || dignity) : '';
-      return `${sign}: ${dignityLabel}`;
-    }).join(', ');
-    dignityText = ` (${dignityInfo})`;
-  } else {
-    dignityText = ' (N/A)';
-  }
-  
+function DignityTag({ dignity }: { dignity: DignityType | undefined }) {
+  if (!dignity) return <span className="pl-dignity" />;
+  const info = DIGNITY_INFO[dignity];
   return (
-    <span style={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      fontSize: '0.7rem',
-      marginLeft: 8,
-      padding: '2px 6px',
-      borderRadius: 4,
-      background: 'rgba(255,255,255,0.05)',
-      border: '1px solid rgba(255,255,255,0.1)',
-    }}>
-      <span style={{ marginRight: 4, color: 'rgba(255,255,255,0.6)' }}>
-        Casa {house}:
-      </span>
-      <span style={{ color: rulerColor, fontSize: '0.9rem', marginRight: 2 }}>
-        {rulerGlyph}
-      </span>
-      <span style={{ color: rulerColor }}>
-        {rulerName}{dignityText}
-      </span>
+    <span
+      className="pl-dignity pl-dignity-on"
+      title={info.label}
+      style={{ color: info.color, background: `${info.color}1f`, borderColor: `${info.color}55` }}
+    >
+      {info.short}
     </span>
   );
 }
 
-const PlanetList: React.FC<PlanetListProps> = ({ planets }) => {
+function PlanetDetails({ planet }: { planet: PlanetPosition }) {
+  const signRuler = SIGN_RULERS[planet.zodiacSign];
+  const dignities = planet.rulerSignDignities ?? [];
   return (
-    <IonList lines="none" style={{ background: 'transparent' }}>
-      {planets.map((planet) => (
-        <IonItem key={planet.name} style={{ '--background': 'transparent' }}>
-          <span
-            slot="start"
-            style={{
-              fontSize: '1.4rem',
-              color: PLANET_COLORS[planet.name] || '#fff',
-              width: '2rem',
-              textAlign: 'center',
-            }}
-          >
-            {planet.glyph}
+    <div className="pl-details">
+      {signRuler && (
+        <div className="pl-detail">
+          <span className="pl-detail-key">Regente do signo</span>
+          <BodyRef name={signRuler} />
+        </div>
+      )}
+      {planet.decanate && (
+        <div className="pl-detail">
+          <span className="pl-detail-key">Decanato</span>
+          <span>{ORDINAL[planet.decanate]}</span>
+        </div>
+      )}
+      {planet.dignity && (
+        <div className="pl-detail">
+          <span className="pl-detail-key">Dignidade</span>
+          <span style={{ color: DIGNITY_INFO[planet.dignity].color }}>{DIGNITY_INFO[planet.dignity].label}</span>
+        </div>
+      )}
+      {planet.house && planet.houseRuler && (
+        <div className="pl-detail">
+          <span className="pl-detail-key">Regente da casa {planet.house}</span>
+          <BodyRef name={planet.houseRuler} />
+        </div>
+      )}
+      {dignities.length > 0 && (
+        <div className="pl-detail">
+          <span className="pl-detail-key">Nos signos do regente</span>
+          <span>
+            {dignities.map(({ sign, dignity }, i) => (
+              <React.Fragment key={sign}>
+                {i > 0 && ', '}
+                {SIGN_NAMES_PT[sign] || sign}
+                {dignity && (
+                  <span style={{ color: DIGNITY_INFO[dignity].color }}> ({DIGNITY_INFO[dignity].label})</span>
+                )}
+              </React.Fragment>
+            ))}
           </span>
-          <IonLabel>
-            <h3 style={{ color: PLANET_COLORS[planet.name] || '#fff', display: 'flex', alignItems: 'center', gap: 6 }}>
-              {PLANET_NAMES_PT[planet.name] || planet.name}
-              {planet.isRetrograde && (
-                <span style={{ color: '#e74c3c', fontSize: '0.85rem', fontWeight: 'bold' }} title="Retrógrado">℞</span>
-              )}
-            </h3>
-            <p style={{ color: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
-              <span>{planet.signDegree}&deg;{planet.signMinute}&apos; {planet.zodiacSign}</span>
-              {(() => {
-                const ruler = SIGN_RULERS[planet.zodiacSign];
-                if (!ruler) return null;
-                const rulerGlyph = PLANET_GLYPHS[ruler] || '';
-                const rulerName = PLANET_NAMES_PT[ruler] || ruler;
-                const rulerColor = PLANET_COLORS[ruler] || '#aaa';
-                return (
-                  <span style={{
-                    fontSize: '0.7rem',
-                    color: rulerColor,
-                    opacity: 0.8,
-                  }}>
-                    ({rulerGlyph} {rulerName})
-                  </span>
-                );
-              })()}
-              {planet.decanate && (
-                <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.45)' }}>
-                  {planet.decanate}&deg; Dec
-                </span>
-              )}
-              <DignityBadge dignity={planet.dignity ?? null} />
-              <HouseRulerInfo house={planet.house} houseRuler={planet.houseRuler} rulerSignDignities={planet.rulerSignDignities} />
-            </p>
-          </IonLabel>
-        </IonItem>
-      ))}
-    </IonList>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PlanetRow({ planet, open, onToggle }: { planet: PlanetPosition; open: boolean; onToggle: () => void }) {
+  const sign = signInfo(planet.zodiacSign);
+  const color = PLANET_COLORS[planet.name] || '#fff';
+  return (
+    <div className={`pl-item ${open ? 'open' : ''}`}>
+      <button className="pl-row" onClick={onToggle} aria-expanded={open}>
+        <span className="pl-glyph" style={{ color }}>{planet.glyph}</span>
+        <span className="pl-name">
+          <span style={{ color }}>{PLANET_NAMES_PT[planet.name] || planet.name}</span>
+          {planet.isRetrograde && <span className="pl-retro" title="Retrógrado">℞</span>}
+        </span>
+        <span className="pl-pos">
+          <span className="pl-sign-glyph" style={{ color: sign?.color }} title={SIGN_NAMES_PT[planet.zodiacSign]}>
+            {sign?.glyph}
+          </span>
+          <span className="pl-sign-name">{SIGN_NAMES_PT[planet.zodiacSign]}</span>
+          <span className="pl-deg"><Degree deg={planet.signDegree} min={planet.signMinute} /></span>
+        </span>
+        <span className="pl-house">{planet.house ? `C${planet.house}` : ''}</span>
+        <DignityTag dignity={planet.dignity} />
+        <IonIcon icon={chevronDown} className="pl-chevron" />
+      </button>
+      {open && <PlanetDetails planet={planet} />}
+    </div>
+  );
+}
+
+const ANGLES = [
+  { key: 'ascendant', label: 'AC' },
+  { key: 'mc',        label: 'MC' },
+  { key: 'descendant', label: 'DC' },
+  { key: 'ic',        label: 'IC' },
+] as const;
+
+const PlanetList: React.FC<PlanetListProps> = ({ chart }) => {
+  const [openName, setOpenName] = useState<string | null>(null);
+  const toggle = (name: string) => setOpenName(prev => (prev === name ? null : name));
+
+  const planets = chart.planets.filter(p => !p.isVirtual);
+  const points = chart.planets.filter(p => p.isVirtual);
+
+  return (
+    <div className="planet-list">
+      <div className="pl-angles">
+        {ANGLES.map(a => {
+          const info = getZodiacSign(chart[a.key]);
+          return (
+            <div key={a.key} className="pl-angle">
+              <span className="pl-angle-label">{a.label}</span>
+              <span className="pl-angle-value">
+                <span style={{ color: info.sign.color }}>{info.sign.glyph}</span>{' '}
+                <Degree deg={info.degree} min={info.minute} />
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="pl-group">
+        {planets.map(p => (
+          <PlanetRow key={p.name} planet={p} open={openName === p.name} onToggle={() => toggle(p.name)} />
+        ))}
+      </div>
+
+      {points.length > 0 && (
+        <>
+          <div className="pl-subtitle">Pontos</div>
+          <div className="pl-group">
+            {points.map(p => (
+              <PlanetRow key={p.name} planet={p} open={openName === p.name} onToggle={() => toggle(p.name)} />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
   );
 };
 

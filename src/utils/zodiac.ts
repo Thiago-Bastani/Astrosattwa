@@ -7,19 +7,22 @@ export interface ZodiacSignInfo {
   color: string;
 }
 
+// Seletor de variação que força apresentação como texto (evita emoji colorido no Android/Windows)
+const TEXT = '\uFE0E';
+
 export const ZODIAC_SIGNS: ZodiacSignInfo[] = [
-  { name: 'Aries',       glyph: '\u2648', element: 'fire',  color: '#e74c3c' },
-  { name: 'Taurus',      glyph: '\u2649', element: 'earth', color: '#27ae60' },
-  { name: 'Gemini',      glyph: '\u264A', element: 'air',   color: '#f1c40f' },
-  { name: 'Cancer',      glyph: '\u264B', element: 'water', color: '#3498db' },
-  { name: 'Leo',         glyph: '\u264C', element: 'fire',  color: '#e74c3c' },
-  { name: 'Virgo',       glyph: '\u264D', element: 'earth', color: '#27ae60' },
-  { name: 'Libra',       glyph: '\u264E', element: 'air',   color: '#f1c40f' },
-  { name: 'Scorpio',     glyph: '\u264F', element: 'water', color: '#3498db' },
-  { name: 'Sagittarius', glyph: '\u2650', element: 'fire',  color: '#e74c3c' },
-  { name: 'Capricorn',   glyph: '\u2651', element: 'earth', color: '#27ae60' },
-  { name: 'Aquarius',    glyph: '\u2652', element: 'air',   color: '#f1c40f' },
-  { name: 'Pisces',      glyph: '\u2653', element: 'water', color: '#3498db' },
+  { name: 'Aries',       glyph: '\u2648' + TEXT, element: 'fire',  color: '#e74c3c' },
+  { name: 'Taurus',      glyph: '\u2649' + TEXT, element: 'earth', color: '#27ae60' },
+  { name: 'Gemini',      glyph: '\u264A' + TEXT, element: 'air',   color: '#f1c40f' },
+  { name: 'Cancer',      glyph: '\u264B' + TEXT, element: 'water', color: '#3498db' },
+  { name: 'Leo',         glyph: '\u264C' + TEXT, element: 'fire',  color: '#e74c3c' },
+  { name: 'Virgo',       glyph: '\u264D' + TEXT, element: 'earth', color: '#27ae60' },
+  { name: 'Libra',       glyph: '\u264E' + TEXT, element: 'air',   color: '#f1c40f' },
+  { name: 'Scorpio',     glyph: '\u264F' + TEXT, element: 'water', color: '#3498db' },
+  { name: 'Sagittarius', glyph: '\u2650' + TEXT, element: 'fire',  color: '#e74c3c' },
+  { name: 'Capricorn',   glyph: '\u2651' + TEXT, element: 'earth', color: '#27ae60' },
+  { name: 'Aquarius',    glyph: '\u2652' + TEXT, element: 'air',   color: '#f1c40f' },
+  { name: 'Pisces',      glyph: '\u2653' + TEXT, element: 'water', color: '#3498db' },
 ];
 
 export const PLANET_GLYPHS: Record<string, string> = {

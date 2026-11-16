@@ -1,0 +1,119 @@
+/* ── Layout compartilhado (mobile-first) ── */
+
+:root {
+  --as-gold: #c9a84c;
+  --as-gold-dim: rgba(201, 168, 76, 0.7);
+  --as-gold-faint: rgba(201, 168, 76, 0.12);
+  --as-border: rgba(201, 168, 76, 0.18);
+  --as-surface: rgba(255, 255, 255, 0.04);
+  --as-surface-2: rgba(255, 255, 255, 0.07);
+  --as-text: #ecf0f1;
+  --as-muted: rgba(255, 255, 255, 0.5);
+  --as-faint: rgba(255, 255, 255, 0.3);
+  --as-radius: 10px;
+}
+
+.app-content {
+  --background: #0a0a2e;
+}
+
+.app-title {
+  font-family: Georgia, serif;
+  letter-spacing: 2px;
+  color: var(--as-gold);
+}
+
+.app-section {
+  padding: 8px 12px;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.section-title {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--as-gold-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 4px 2px 8px;
+}
+
+.app-bottom-spacer {
+  height: 24px;
+}
+
+/* Segmented toggle (Sideral / Tropical) */
+.seg-toggle {
+  display: inline-flex;
+  border: 1px solid rgba(201, 168, 76, 0.4);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-right: 8px;
+}
+
+.seg-toggle button {
+  background: transparent;
+  border: none;
+  color: rgba(201, 168, 76, 0.5);
+  font-family: Georgia, serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.seg-toggle button + button {
+  border-left: 1px solid rgba(201, 168, 76, 0.4);
+}
+
+.seg-toggle button.active {
+  background: rgba(201, 168, 76, 0.18);
+  color: var(--as-gold);
+}
+
+.seg-toggle button:disabled {
+  opacity: 0.5;
+}
+
+/* Campo compacto com rótulo pequeno */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.field-label {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--as-muted);
+  padding-left: 2px;
+}
+
+.input {
+  width: 100%;
+  min-width: 0;
+  height: 38px;
+  background: var(--as-surface-2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--as-radius);
+  padding: 0 10px;
+  color: var(--as-text);
+  font-size: 0.85rem;
+  outline: none;
+  color-scheme: dark;
+}
+
+.input:focus {
+  border-color: rgba(201, 168, 76, 0.5);
+}
+
+.input::placeholder {
+  color: var(--as-faint);
+}
+
+ion-toolbar {
+  --background: #000000;
+  --color: var(--as-gold);
+}

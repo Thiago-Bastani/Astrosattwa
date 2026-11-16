@@ -82,6 +82,7 @@
 }
 
 .or-group-btn {
+  align-self: flex-start;
   display: inline-flex;
   align-items: center;
   gap: 4px;

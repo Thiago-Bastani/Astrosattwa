@@ -1,12 +1,5 @@
 import React from 'react';
-import type { TattwaInfo } from '../utils/tattwa';
-import './TattwaIndicator.css';
-
-interface TattwaIndicatorProps {
-  tattwa: TattwaInfo | null;
-}
-
-function TattwaShape({ shape, color, size = 28 }: { shape: string; color: string; size?: number }) {
+export function TattwaShape({ shape, color, size = 28 }: { shape: string; color: string; size?: number }) {
   const half = size / 2;
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="tattwa-shape-svg">
@@ -47,25 +40,3 @@ function TattwaShape({ shape, color, size = 28 }: { shape: string; color: string
     </svg>
   );
 }
-
-const TattwaIndicator: React.FC<TattwaIndicatorProps> = ({ tattwa }) => {
-  if (!tattwa) return null;
-
-  return (
-    <div className="tattwa-indicator">
-      <div className="tattwa-glow" style={{ '--tattwa-color': tattwa.color } as React.CSSProperties}>
-        <TattwaShape shape={tattwa.shape} color={tattwa.color} size={30} />
-      </div>
-      <div className="tattwa-info">
-        <span className="tattwa-name" style={{ color: tattwa.color }}>
-          {tattwa.namePt}
-        </span>
-        <span className="tattwa-remaining">
-          {Math.ceil(tattwa.minutesRemaining)} min
-        </span>
-      </div>
-    </div>
-  );
-};
-
-export default TattwaIndicator;

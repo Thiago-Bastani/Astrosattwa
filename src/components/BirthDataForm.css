@@ -1,84 +1,95 @@
-.birth-data-form {
-  padding: 8px 12px;
-}
-
-.form-item {
-  --background: rgba(255, 255, 255, 0.05);
-  --border-radius: 8px;
-  margin-bottom: 4px;
-}
-
-.form-item ion-input {
-  --color: #ecf0f1;
-}
-
-.arrow-btn {
-  --color: #c9a84c;
-  font-size: 1.2rem;
-}
-
-.minute-row {
-  margin-top: -8px;
-  margin-bottom: 4px;
-}
-
-.minute-label {
-  font-size: 0.7rem;
-  color: #c9a84c;
-  opacity: 0.7;
-}
-
-/* Tattwa ao lado da hora */
-.tattwa-col {
-  padding: 0 4px;
-}
-
-/* Dropdown de busca de localização */
-.location-results {
-  background: rgba(10, 10, 46, 0.95);
-  border: 1px solid #c9a84c;
-  border-radius: 8px;
-  max-height: 180px;
-  overflow-y: auto;
-  margin: 4px 0;
-}
-
-.location-result-item {
-  padding: 10px 12px;
-  color: #ecf0f1;
-  font-size: 0.85rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  cursor: pointer;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.location-result-item:last-child {
-  border-bottom: none;
-}
-
-.location-result-item:active {
-  background: rgba(201, 168, 76, 0.2);
-}
-
-/* Local selecionado */
-.selected-location {
+.dt-form {
   display: flex;
   flex-direction: column;
-  padding: 6px 12px;
-  gap: 2px;
+  gap: 8px;
 }
 
-.selected-location-name {
-  color: #ecf0f1;
-  font-size: 0.85rem;
-  white-space: nowrap;
+.dt-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* Stepper: [‹] valor [›] num único bloco */
+.stepper {
+  display: flex;
+  align-items: stretch;
+  height: 38px;
+  min-width: 0;
+  background: var(--as-surface-2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--as-radius);
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.selected-location-coords {
-  color: rgba(255, 255, 255, 0.45);
-  font-size: 0.75rem;
+.stepper-date {
+  flex: 1 1 0;
+}
+
+.stepper-time {
+  flex: 1.15 1 0;
+}
+
+.step-btn {
+  flex-shrink: 0;
+  width: 26px;
+  background: none;
+  border: none;
+  color: var(--as-gold);
+  font-size: 1.15rem;
+  line-height: 1;
+  padding: 0 0 2px;
+  cursor: pointer;
+}
+
+.step-btn:active {
+  background: rgba(201, 168, 76, 0.18);
+}
+
+.stepper-input {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--as-text);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  padding: 0;
+  color-scheme: dark;
+}
+
+/* O ícone nativo do picker cobre o campo inteiro (invisível): tocar em
+   qualquer lugar abre o seletor e não gasta espaço horizontal */
+.stepper-input::-webkit-calendar-picker-indicator {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.stepper-input::-webkit-datetime-edit {
+  padding: 0;
+}
+
+.now-btn {
+  flex-shrink: 0;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: var(--as-radius);
+  background: var(--as-gold-faint);
+  border: 1px solid rgba(201, 168, 76, 0.35);
+  color: var(--as-gold);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.now-btn:active {
+  background: rgba(201, 168, 76, 0.25);
 }

@@ -1,5 +1,5 @@
 import * as Astronomy from 'astronomy-engine';
-import type { GeoLocation, ChartData, PlanetPosition, MoonPhase, LunarMansion } from '../types/astro';
+import type { GeoLocation, ChartData, PlanetPosition, MoonPhase, LunarMansion, ZodiacSystem } from '../types/astro';
 import { getZodiacSign, getDecanate, getDignity, getHouseFromLongitude, getSignRuler, getRulerSignDignities, PLANET_GLYPHS } from '../utils/zodiac';
 
 const PLANET_BODIES: { name: string; body: string }[] = [
@@ -48,11 +48,10 @@ function normalizeDeg(d: number): number {
 
 /* ── Retrogradação ── */
 
-function checkRetrograde(bodyName: string, date: Date): boolean {
+function checkRetrograde(bodyName: string, date: Date, lon1: number): boolean {
   // Sol e Lua nunca são retrógrados
   if (bodyName === 'Sun' || bodyName === 'Moon') return false;
 
-  const lon1 = getPlanetLongitude(bodyName, date);
   const nextDay = new Date(date.getTime() + 86400000);
   const lon2 = getPlanetLongitude(bodyName, nextDay);
 
@@ -191,9 +190,17 @@ function calculateMoonPhase(date: Date): MoonPhase {
 
 /* ── Chart principal ── */
 
-export type ZodiacSystem = 'sidereal' | 'tropical';
+export interface ChartOptions {
+  /** Pula o cálculo de retrogradação (usado na busca quando nenhuma condição depende disso). */
+  skipRetrograde?: boolean;
+}
 
-export function calculateChart(date: Date, location: GeoLocation, zodiacSystem: ZodiacSystem = 'sidereal'): ChartData {
+export function calculateChart(
+  date: Date,
+  location: GeoLocation,
+  zodiacSystem: ZodiacSystem = 'sidereal',
+  options: ChartOptions = {},
+): ChartData {
   const ayanamsa = zodiacSystem === 'sidereal' ? calculateLahiriAyanamsa(date) : 0;
 
   // Ângulos — subtraí ayanamsa apenas no sistema sideral
@@ -206,7 +213,8 @@ export function calculateChart(date: Date, location: GeoLocation, zodiacSystem: 
   const houseCusps = Array.from({ length: 12 }, (_, i) => normalizeDeg(ascendant + i * 30));
 
   const planets: PlanetPosition[] = PLANET_BODIES.map(({ name, body }) => {
-    const longitude = normalizeDeg(getPlanetLongitude(body, date) - ayanamsa);
+    const tropicalLon = getPlanetLongitude(body, date);
+    const longitude = normalizeDeg(tropicalLon - ayanamsa);
     const { sign, degree, minute } = getZodiacSign(longitude);
     const house = getHouseFromLongitude(longitude, houseCusps);
     const houseSign = getZodiacSign(houseCusps[house - 1]).sign.name;
@@ -220,7 +228,7 @@ export function calculateChart(date: Date, location: GeoLocation, zodiacSystem: 
       signDegree: degree,
       signMinute: minute,
       glyph: PLANET_GLYPHS[name],
-      isRetrograde: checkRetrograde(body, date),
+      isRetrograde: options.skipRetrograde ? false : checkRetrograde(body, date, tropicalLon),
       decanate: getDecanate(degree),
       dignity: getDignity(name, sign.name),
       house,

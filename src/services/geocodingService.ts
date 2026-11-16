@@ -5,9 +5,8 @@ export async function searchLocation(query: string): Promise<NominatimResult[]> 
 
   try {
     const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query.trim())}&limit=5`;
-    const res = await fetch(url, {
-      headers: { 'User-Agent': 'Astrosattwa/1.0' },
-    });
+    // Navegadores/WebView não permitem definir User-Agent; o Nominatim identifica pelo Referer
+    const res = await fetch(url);
     if (!res.ok) return [];
     const data = await res.json();
     return data.map((item: any) => ({

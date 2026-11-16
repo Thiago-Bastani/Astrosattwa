@@ -5,6 +5,7 @@ export interface TattwaInfo {
   name: string;
   namePt: string;
   element: string;
+  elementPt: string;
   color: string;
   bgColor: string;
   shape: 'crescent-left' | 'pentagon' | 'triangle' | 'square' | 'crescent-up';
@@ -13,11 +14,11 @@ export interface TattwaInfo {
 }
 
 const TATTWAS = [
-  { name: 'Akasha',  namePt: 'Akasha (Éter)',   element: 'ether', color: '#0000ff', bgColor: '#2a0050', shape: 'crescent-left' as const },
-  { name: 'Vayu',    namePt: 'Vayu (Ar)',        element: 'air',   color: '#00ff00', bgColor: '#1a3a2a', shape: 'pentagon' as const },
-  { name: 'Tejas',   namePt: 'Tejas (Fogo)',     element: 'fire',  color: '#ff0000', bgColor: '#5c1a1a', shape: 'triangle' as const },
-  { name: 'Prithvi', namePt: 'Prithvi (Terra)',  element: 'earth', color: '#ffaa00', bgColor: '#5c3a1a', shape: 'square' as const },
-  { name: 'Apas',    namePt: 'Apas (Água)',      element: 'water', color: '#ff00ff', bgColor: '#3a1a4e', shape: 'crescent-up' as const },
+  { name: 'Akasha',  namePt: 'Akasha (Éter)',   element: 'ether', elementPt: 'Éter', color: '#0000ff', bgColor: '#2a0050', shape: 'crescent-left' as const },
+  { name: 'Vayu',    namePt: 'Vayu (Ar)',        element: 'air', elementPt: 'Ar',   color: '#00ff00', bgColor: '#1a3a2a', shape: 'pentagon' as const },
+  { name: 'Tejas',   namePt: 'Tejas (Fogo)',     element: 'fire', elementPt: 'Fogo',  color: '#ff0000', bgColor: '#5c1a1a', shape: 'triangle' as const },
+  { name: 'Prithvi', namePt: 'Prithvi (Terra)',  element: 'earth', elementPt: 'Terra', color: '#ffaa00', bgColor: '#5c3a1a', shape: 'square' as const },
+  { name: 'Apas',    namePt: 'Apas (Água)',      element: 'water', elementPt: 'Água', color: '#ff00ff', bgColor: '#3a1a4e', shape: 'crescent-up' as const },
 ];
 
 const TATTWA_DURATION = 24; // minutos por tattwa principal

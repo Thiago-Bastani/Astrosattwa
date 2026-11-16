@@ -104,7 +104,7 @@ const HouseGrid: React.FC<HouseGridProps> = ({ cx, cy, innerRadius, outerRadius,
         const wing2Y = baseY + arrowWidth * perpSin;
 
         // Label position
-        const labelDist = outerRadius + arrowLen + 16;
+        const labelDist = outerRadius + arrowLen + 8;
         const labelX = cx + labelDist * cosA;
         const labelY = cy - labelDist * sinA;
 

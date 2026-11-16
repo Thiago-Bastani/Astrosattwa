@@ -1,0 +1,179 @@
+.planet-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Ângulos: 4 mini-cartões numa linha ── */
+.pl-angles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.pl-angle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 6px 2px;
+  background: var(--as-surface);
+  border: 1px solid var(--as-border);
+  border-radius: var(--as-radius);
+}
+
+.pl-angle-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--as-gold-dim);
+}
+
+.pl-angle-value {
+  font-size: 0.78rem;
+  color: var(--as-text);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ── Lista ── */
+.pl-group {
+  background: var(--as-surface);
+  border: 1px solid var(--as-border);
+  border-radius: var(--as-radius);
+  overflow: hidden;
+}
+
+.pl-subtitle {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--as-muted);
+  margin: 4px 2px -2px;
+}
+
+.pl-item + .pl-item {
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.pl-item.open {
+  background: rgba(201, 168, 76, 0.05);
+}
+
+.pl-row {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto 28px 30px 14px;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 10px;
+  background: none;
+  border: none;
+  color: var(--as-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.pl-glyph {
+  font-size: 1.15rem;
+  text-align: center;
+  line-height: 1;
+}
+
+.pl-name {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.84rem;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pl-retro {
+  color: #e74c3c;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.pl-pos {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  justify-content: flex-end;
+  white-space: nowrap;
+}
+
+.pl-sign-glyph {
+  font-size: 0.95rem;
+}
+
+.pl-sign-name {
+  display: none;
+  font-size: 0.78rem;
+  color: var(--as-muted);
+}
+
+.pl-deg {
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  min-width: 44px;
+  text-align: right;
+}
+
+.pl-house {
+  font-size: 0.7rem;
+  color: var(--as-muted);
+  text-align: right;
+}
+
+.pl-dignity {
+  display: inline-block;
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-align: center;
+  padding: 2px 0;
+  border-radius: 4px;
+  border: 1px solid transparent;
+}
+
+.pl-chevron {
+  font-size: 0.8rem;
+  color: var(--as-faint);
+  transition: transform 0.15s;
+}
+
+.pl-item.open .pl-chevron {
+  transform: rotate(180deg);
+}
+
+/* ── Detalhes ── */
+.pl-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 2px 12px 10px 38px;
+}
+
+.pl-detail {
+  display: flex;
+  gap: 8px;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--as-text);
+}
+
+.pl-detail-key {
+  flex: 0 0 auto;
+  min-width: 118px;
+  color: var(--as-muted);
+}
+
+/* Telas um pouco maiores: mostra o nome do signo */
+@media (min-width: 420px) {
+  .pl-sign-name {
+    display: inline;
+  }
+}

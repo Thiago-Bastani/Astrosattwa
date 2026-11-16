@@ -512,8 +512,8 @@ const ReferencePage: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar style={{ '--background': '#000000', '--color': '#c9a84c' } as any}>
-          <IonTitle style={{ fontFamily: 'Georgia, serif', letterSpacing: 2 }}>Referência</IonTitle>
+        <IonToolbar>
+          <IonTitle className="app-title">Referência</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen className="reference-content">

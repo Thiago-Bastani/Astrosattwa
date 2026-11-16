@@ -1,15 +1,14 @@
 import React, { useState, useRef } from 'react';
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonProgressBar } from '@ionic/react';
-import type { GeoLocation } from '../types/astro';
+import { IonButtons, IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonProgressBar } from '@ionic/react';
+import type { GeoLocation, ZodiacSystem } from '../types/astro';
 import type { ConditionSet, ConditionRule, SearchResult, SearchProgress } from '../types/conditions';
-import { searchLocation } from '../services/geocodingService';
 import { findNextMatchingDate } from '../services/dateSearcher';
-import { PLANET_COLORS, PLANET_GLYPHS, ZODIAC_SIGNS } from '../utils/zodiac';
-import { PLANET_NAMES_PT, SIGN_NAMES_PT, ANGLE_NAMES_PT } from '../utils/astroLabels';
-import { getZodiacSign } from '../utils/zodiac';
 import ConditionChips from '../components/ConditionChips';
 import ConditionBuilder from '../components/ConditionBuilder';
 import AspectGrid from '../components/AspectGrid';
+import PlanetList from '../components/PlanetList';
+import LocationPicker from '../components/LocationPicker';
+import ZodiacToggle from '../components/ZodiacToggle';
 import './CalculatorPage.css';
 
 const WEEKDAYS = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
@@ -21,9 +20,6 @@ function uuid() {
 const CalculatorPage: React.FC = () => {
   // Location
   const [location, setLocation] = useState<GeoLocation | null>(null);
-  const [locQuery, setLocQuery] = useState('');
-  const [locResults, setLocResults] = useState<{ display_name: string; lat: string; lon: string }[]>([]);
-  const [locSearching, setLocSearching] = useState(false);
 
   // Conditions
   const [conditionSet, setConditionSet] = useState<ConditionSet>({
@@ -33,30 +29,18 @@ const CalculatorPage: React.FC = () => {
   const [activeGroupId, setActiveGroupId] = useState<string>('');
 
   // Search
-  const [startDateStr, setStartDateStr] = useState(() => new Date().toISOString().slice(0, 10));
+  const [startDateStr, setStartDateStr] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  });
   const [maxDays, setMaxDays] = useState(365);
+  const [zodiacSystem, setZodiacSystem] = useState<ZodiacSystem>('sidereal');
   const [isSearching, setIsSearching] = useState(false);
   const [progress, setProgress] = useState<SearchProgress | null>(null);
   const [result, setResult] = useState<SearchResult | null>(null);
   const [noResult, setNoResult] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
-
-  /* ── Location search ── */
-
-  async function handleLocSearch() {
-    if (locQuery.trim().length < 2) return;
-    setLocSearching(true);
-    const results = await searchLocation(locQuery);
-    setLocResults(results);
-    setLocSearching(false);
-  }
-
-  function handleLocSelect(r: { display_name: string; lat: string; lon: string }) {
-    setLocation({ lat: parseFloat(r.lat), lon: parseFloat(r.lon), name: r.display_name });
-    setLocResults([]);
-    setLocQuery('');
-  }
 
   /* ── Condition management ── */
 
@@ -126,6 +110,7 @@ const CalculatorPage: React.FC = () => {
   async function handleCalculate() {
     if (!canCalculate || !location) return;
     setIsSearching(true);
+    setProgress(null);
     setResult(null);
     setNoResult(false);
     setError(null);
@@ -141,6 +126,7 @@ const CalculatorPage: React.FC = () => {
         maxDays,
         (p) => setProgress(p),
         controller.signal,
+        zodiacSystem,
       );
 
       if (found) {
@@ -166,51 +152,49 @@ const CalculatorPage: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar style={{ '--background': '#000000', '--color': '#c9a84c' } as any}>
-          <IonTitle style={{ fontFamily: 'Georgia, serif', letterSpacing: 2 }}>Calculadora</IonTitle>
+        <IonToolbar>
+          <IonTitle className="app-title">Calculadora</IonTitle>
+          <IonButtons slot="end">
+            <ZodiacToggle value={zodiacSystem} onChange={setZodiacSystem} disabled={isSearching} />
+          </IonButtons>
         </IonToolbar>
       </IonHeader>
-      <IonContent fullscreen className="calculator-content">
+      <IonContent fullscreen className="app-content">
 
-        {/* ── Location ── */}
-        <div className="calc-section">
-          <div className="calc-section-title">Localização</div>
-          {!location ? (
-            <>
-              <div className="location-search-row">
+        {/* ── Local + período ── */}
+        <div className="app-section">
+          <div className="section-title">Onde e quando</div>
+          <div className="calc-params">
+            <LocationPicker location={location} onChange={setLocation} placeholder="Escolher local (obrigatório)" />
+            <div className="calc-params-row">
+              <label className="field">
+                <span className="field-label">A partir de</span>
                 <input
-                  className="location-search-input"
-                  placeholder="Buscar cidade..."
-                  value={locQuery}
-                  onChange={e => setLocQuery(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleLocSearch()}
+                  type="date"
+                  className="input"
+                  value={startDateStr}
+                  onChange={e => setStartDateStr(e.target.value)}
                 />
-                <button className="location-search-btn" onClick={handleLocSearch} disabled={locSearching}>
-                  {locSearching ? '...' : 'Buscar'}
-                </button>
-              </div>
-              {locResults.length > 0 && (
-                <div className="location-results">
-                  {locResults.map((r, i) => (
-                    <button key={i} className="location-result-item" onClick={() => handleLocSelect(r)}>
-                      {r.display_name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="location-selected">
-              <span className="loc-name">{location.name}</span>
-              <span className="loc-coords">{location.lat.toFixed(2)}°, {location.lon.toFixed(2)}°</span>
-              <button className="loc-clear" onClick={() => setLocation(null)}>×</button>
+              </label>
+              <label className="field calc-days-field">
+                <span className="field-label">Limite (dias)</span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  className="input"
+                  min={1}
+                  max={36500}
+                  value={maxDays}
+                  onChange={e => setMaxDays(Math.max(1, parseInt(e.target.value) || 365))}
+                />
+              </label>
             </div>
-          )}
+          </div>
         </div>
 
-        {/* ── Conditions ── */}
-        <div className="calc-section">
-          <div className="calc-section-title">Condições</div>
+        {/* ── Condições ── */}
+        <div className="app-section">
+          <div className="section-title">Condições</div>
           <ConditionChips
             conditionSet={conditionSet}
             onRemoveRule={handleRemoveRule}
@@ -222,119 +206,70 @@ const CalculatorPage: React.FC = () => {
           </button>
         </div>
 
-        {/* ── Calculate ── */}
-        <div className="calc-section">
-          <div className="calc-section-title" style={{ textAlign: 'center' }}>Busca</div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, marginBottom: 12 }}>
-            <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.5px' }}>A partir de</span>
-            <input
-              type="date"
-              value={startDateStr}
-              onChange={e => setStartDateStr(e.target.value)}
-              className="location-search-input"
-              style={{ width: '100%', textAlign: 'center' }}
-            />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, marginBottom: 12 }}>
-            <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.5px' }}>Limite (dias)</span>
-            <input
-              type="number"
-              min={1}
-              max={36500}
-              value={maxDays}
-              onChange={e => setMaxDays(Math.max(1, parseInt(e.target.value) || 365))}
-              className="location-search-input"
-              style={{ width: 120, textAlign: 'center' }}
-            />
-          </div>
-          {!location && totalRules > 0 && (
-            <div style={{ fontSize: '0.75rem', color: 'rgba(231, 76, 60, 0.7)', marginBottom: 8 }}>
-              Selecione uma localização para condições de casa e ângulo
-            </div>
-          )}
-          <button className="calc-btn" disabled={!canCalculate || isSearching} onClick={handleCalculate}>
-            {isSearching ? 'Buscando...' : 'Calcular próxima data'}
-          </button>
-
-          {isSearching && progress && (
+        {/* ── Ação ── */}
+        <div className="app-section">
+          {isSearching ? (
             <div className="calc-progress">
-              <IonProgressBar
-                value={progress.daysSearched / maxDays}
-                style={{ '--progress-background': '#c9a84c', '--background': 'rgba(255,255,255,0.08)' } as any}
-              />
+              <IonProgressBar value={progress ? progress.daysSearched / maxDays : 0} className="calc-progress-bar" />
               <div className="calc-progress-info">
                 <span className="calc-progress-date">
-                  {progress.currentDate.toLocaleDateString('pt-BR')} ({progress.daysSearched} dias)
+                  {progress
+                    ? `${progress.currentDate.toLocaleDateString('pt-BR')} · ${progress.daysSearched} de ${maxDays} dias`
+                    : 'Iniciando...'}
                 </span>
                 <button className="calc-cancel-btn" onClick={handleCancel}>Cancelar</button>
               </div>
             </div>
+          ) : (
+            <>
+              <button className="calc-btn" disabled={!canCalculate} onClick={handleCalculate}>
+                Calcular próxima data
+              </button>
+              {!canCalculate && (
+                <div className="calc-hint">
+                  {!location && totalRules === 0
+                    ? 'Escolha um local e adicione ao menos uma condição'
+                    : !location
+                      ? 'Escolha um local para buscar'
+                      : 'Adicione ao menos uma condição'}
+                </div>
+              )}
+            </>
           )}
         </div>
 
-        {/* ── Result ── */}
+        {/* ── Resultado ── */}
         {result && (
-          <div className="calc-section">
-            <div className="calc-result">
-              <div className="calc-result-label">Próxima data encontrada</div>
-              <div className="calc-result-date">
-                {result.date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
+          <>
+            <div className="app-section">
+              <div className="calc-result">
+                <div className="calc-result-label">
+                  Próxima data · {result.chart.zodiacSystem === 'sidereal' ? 'sideral' : 'tropical'}
+                </div>
+                <div className="calc-result-date">
+                  {result.date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
+                </div>
+                <div className="calc-result-meta">
+                  <span className="calc-result-time">
+                    {result.date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                  <span className="calc-result-weekday">{WEEKDAYS[result.date.getDay()]}</span>
+                </div>
               </div>
-              <div className="calc-result-time">
-                {result.date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-              </div>
-              <div className="calc-result-weekday">
-                {WEEKDAYS[result.date.getDay()]}
-              </div>
-
-              <div className="calc-planet-list">
-                {result.chart.planets.map(p => {
-                  const signInfo = ZODIAC_SIGNS.find(s => s.name === p.zodiacSign);
-                  return (
-                    <div key={p.name} className="calc-planet-row">
-                      <span className="calc-planet-glyph" style={{ color: PLANET_COLORS[p.name] }}>
-                        {PLANET_GLYPHS[p.name]}
-                      </span>
-                      <span className="calc-planet-name">{PLANET_NAMES_PT[p.name]}</span>
-                      <span className="calc-planet-sign" style={{ color: signInfo?.color }}>
-                        {signInfo?.glyph} {SIGN_NAMES_PT[p.zodiacSign]}
-                      </span>
-                      <span className="calc-planet-deg">
-                        {p.signDegree}°{String(p.signMinute).padStart(2, '0')}'
-                      </span>
-                      {p.isRetrograde && <span className="calc-planet-retro">℞</span>}
-                    </div>
-                  );
-                })}
-                {/* Ângulos: AC, DC, MC, IC */}
-                {([
-                  { key: 'Ascendant', label: 'AC', lon: result.chart.ascendant },
-                  { key: 'Descendant', label: 'DC', lon: result.chart.descendant },
-                  { key: 'MC', label: 'MC', lon: result.chart.mc },
-                  { key: 'IC', label: 'IC', lon: result.chart.ic },
-                ] as const).map(a => {
-                  const info = getZodiacSign(a.lon);
-                  return (
-                    <div key={a.key} className="calc-planet-row">
-                      <span className="calc-planet-glyph" style={{ color: '#c9a84c' }}>{a.label}</span>
-                      <span className="calc-planet-name">{ANGLE_NAMES_PT[a.key]}</span>
-                      <span className="calc-planet-sign" style={{ color: info.sign.color }}>
-                        {info.sign.glyph} {SIGN_NAMES_PT[info.sign.name]}
-                      </span>
-                      <span className="calc-planet-deg">
-                        {info.degree}°{String(info.minute).padStart(2, '0')}'
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
+            </div>
+            <div className="app-section">
+              <div className="section-title">Posições</div>
+              <PlanetList chart={result.chart} />
+            </div>
+            <div className="app-section">
+              <div className="section-title">Aspectos</div>
               <AspectGrid planets={result.chart.planets} />
             </div>
-          </div>
+          </>
         )}
 
         {noResult && !isSearching && (
-          <div className="calc-section">
+          <div className="app-section">
             <div className="calc-no-result">
               Nenhuma data encontrada nos próximos {maxDays} dias que satisfaça todas as condições.
             </div>
@@ -342,14 +277,12 @@ const CalculatorPage: React.FC = () => {
         )}
 
         {error && !isSearching && (
-          <div className="calc-section">
-            <div className="calc-no-result" style={{ color: 'rgba(231, 76, 60, 0.8)' }}>
-              Erro: {error}
-            </div>
+          <div className="app-section">
+            <div className="calc-no-result calc-error">Erro: {error}</div>
           </div>
         )}
 
-        <div style={{ height: 80 }} />
+        <div className="app-bottom-spacer" />
       </IonContent>
 
       <ConditionBuilder

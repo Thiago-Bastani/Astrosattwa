@@ -44,16 +44,11 @@ const AspectGrid: React.FC<AspectGridProps> = ({ planets }) => {
   const height = (n) * CELL;
 
   return (
-    <div style={{ padding: '16px 8px', overflowX: 'auto' }}>
-      <h3 style={{ color: '#c9a84c', textAlign: 'center', marginBottom: 12, fontSize: '1rem' }}>
-        Aspectos
-      </h3>
+    <div>
       <div style={{ display: 'flex', justifyContent: 'center' }}>
         <svg
-          width={width}
-          height={height}
           viewBox={`0 0 ${width} ${height}`}
-          style={{ maxWidth: '100%' }}
+          style={{ width: '100%', maxWidth: width, height: 'auto', display: 'block' }}
         >
           {/* Planet glyphs along the diagonal */}
           {planets.map((p, i) => (
@@ -64,7 +59,7 @@ const AspectGrid: React.FC<AspectGridProps> = ({ planets }) => {
               textAnchor="middle"
               dominantBaseline="central"
               fill={PLANET_COLORS[p.name] || '#fff'}
-              fontSize="14"
+              fontSize="18"
               fontWeight="bold"
             >
               {p.glyph}
@@ -94,7 +89,7 @@ const AspectGrid: React.FC<AspectGridProps> = ({ planets }) => {
                       textAnchor="middle"
                       dominantBaseline="central"
                       fill={aspect.color}
-                      fontSize="13"
+                      fontSize="17"
                     >
                       {aspect.glyph}
                     </text>
@@ -129,9 +124,9 @@ const AspectGrid: React.FC<AspectGridProps> = ({ planets }) => {
           display: 'flex',
           flexWrap: 'wrap',
           justifyContent: 'center',
-          gap: '8px 16px',
-          marginTop: 12,
-          fontSize: '0.75rem',
+          gap: '4px 12px',
+          marginTop: 8,
+          fontSize: '0.7rem',
           color: 'rgba(255,255,255,0.6)',
         }}
       >

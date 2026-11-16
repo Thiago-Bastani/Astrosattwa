@@ -1,0 +1,59 @@
+.sky-status {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.sky-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 7px 8px;
+  background: var(--as-surface);
+  border: 1px solid var(--as-border);
+  border-radius: var(--as-radius);
+}
+
+.sky-label {
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--as-gold-dim);
+}
+
+.sky-value {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: Georgia, serif;
+  font-size: 0.8rem;
+  line-height: 1.2;
+  color: var(--as-gold);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.sky-emoji {
+  font-size: 1rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.sky-tattwa-shape {
+  display: flex;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 4px var(--glow)) brightness(1.2);
+}
+
+.sky-tattwa-shape svg {
+  display: block;
+}
+
+.sky-sub {
+  font-size: 0.64rem;
+  color: var(--as-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

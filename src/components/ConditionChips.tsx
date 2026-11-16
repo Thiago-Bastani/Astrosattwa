@@ -14,7 +14,7 @@ const ConditionChips: React.FC<ConditionChipsProps> = ({ conditionSet, onRemoveR
 
   if (nonEmptyGroups.length === 0) {
     return (
-      <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: '0.85rem', padding: '16px 0' }}>
+      <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: '0.85rem', padding: '10px 0' }}>
         Nenhuma condição adicionada
       </div>
     );

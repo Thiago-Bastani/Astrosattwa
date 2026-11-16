@@ -8,7 +8,15 @@
   --color: #ecf0f1;
   border: 1px solid rgba(201, 168, 76, 0.15);
   border-radius: 12px;
-  margin: 12px;
+  margin: 10px 8px;
+}
+
+.ref-card ion-card-header {
+  padding: 14px 12px 6px;
+}
+
+.ref-card ion-card-content {
+  padding: 0 12px 14px;
 }
 
 .ref-card-title {
