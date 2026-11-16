@@ -1,7 +1,7 @@
 .mandala-chart-container {
   display: flex;
   justify-content: center;
-  max-width: 560px;
+  max-width: 600px;
   margin: 0 auto;
 }
 
@@ -9,5 +9,5 @@
   display: block;
   width: 100%;
   height: auto;
-  filter: drop-shadow(0 0 24px rgba(201, 168, 76, 0.15));
+  filter: drop-shadow(0 0 24px rgba(var(--as-accent-rgb), 0.2));
 }

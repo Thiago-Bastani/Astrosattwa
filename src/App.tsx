@@ -14,6 +14,8 @@ import { planetOutline, bookOutline, calculatorOutline } from 'ionicons/icons';
 import MandalaPage from './pages/MandalaPage';
 import ReferencePage from './pages/ReferencePage';
 import CalculatorPage from './pages/CalculatorPage';
+import { DayThemeProvider } from './theme/DayTheme';
+import ThemeRouteSync from './theme/ThemeRouteSync';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -41,7 +43,9 @@ setupIonicReact();
 
 const App: React.FC = () => (
   <IonApp>
+    <DayThemeProvider>
     <IonReactRouter>
+      <ThemeRouteSync />
       <IonTabs>
         <IonRouterOutlet>
           <Route exact path="/mandala" component={MandalaPage} />
@@ -49,7 +53,7 @@ const App: React.FC = () => (
           <Route exact path="/calculadora" component={CalculatorPage} />
           <Redirect exact from="/" to="/mandala" />
         </IonRouterOutlet>
-        <IonTabBar slot="bottom" style={{ '--background': '#000000', '--color': '#7f8c8d', '--color-selected': '#c9a84c' } as any}>
+        <IonTabBar slot="bottom" className="app-tabbar">
           <IonTabButton tab="mandala" href="/mandala">
             <IonIcon icon={planetOutline} />
             <IonLabel>Mapa</IonLabel>
@@ -65,6 +69,7 @@ const App: React.FC = () => (
         </IonTabBar>
       </IonTabs>
     </IonReactRouter>
+    </DayThemeProvider>
   </IonApp>
 );
 

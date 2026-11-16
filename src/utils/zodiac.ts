@@ -26,21 +26,21 @@ export const ZODIAC_SIGNS: ZodiacSignInfo[] = [
 ];
 
 export const PLANET_GLYPHS: Record<string, string> = {
-  Sun:       '\u2609',
-  Moon:      '\u263D',
-  Mercury:   '\u263F',
-  Venus:     '\u2640',
-  Mars:      '\u2642',
-  Jupiter:   '\u2643',
-  Saturn:    '\u2644',
-  Uranus:    '\u2645',
-  Neptune:   '\u2646',
-  Pluto:     '\u2647',
-  Lilith:    '\u26B8',
-  NorthNode: '\u260A',
-  SouthNode: '\u260B',
+  Sun:       '\u2609' + TEXT,
+  Moon:      '\u263D' + TEXT,
+  Mercury:   '\u263F' + TEXT,
+  Venus:     '\u2640' + TEXT,
+  Mars:      '\u2642' + TEXT,
+  Jupiter:   '\u2643' + TEXT,
+  Saturn:    '\u2644' + TEXT,
+  Uranus:    '\u2645' + TEXT,
+  Neptune:   '\u2646' + TEXT,
+  Pluto:     '\u2647' + TEXT,
+  Lilith:    '\u26B8' + TEXT,
+  NorthNode: '\u260A' + TEXT,
+  SouthNode: '\u260B' + TEXT,
   Vertex:    'Vx',
-  Chiron:    '\u26B7',
+  Chiron:    '\u26B7' + TEXT,
 };
 
 export const PLANET_COLORS: Record<string, string> = {

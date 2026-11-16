@@ -20,15 +20,16 @@ const PlanetMarker: React.FC<PlanetMarkerProps> = ({ planet, cx, cy, radius, asc
 
   return (
     <g>
-      <circle cx={x} cy={y} r={radius * 0.08} fill={color} fillOpacity={0.2} />
+      <circle cx={x} cy={y} r={radius * 0.095} fill={color} fillOpacity={0.2} />
       <text
         x={x}
         y={y}
         textAnchor="middle"
         dominantBaseline="central"
         fill={color}
-        fontSize={radius * 0.14}
+        fontSize={radius * 0.17}
         fontWeight="bold"
+        className="astro-glyph"
       >
         {planet.glyph}
       </text>

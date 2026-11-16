@@ -1,6 +1,5 @@
 import React from 'react';
 import { ZODIAC_SIGNS } from '../utils/zodiac';
-import { ZODIAC_SVG_PATHS } from '../utils/zodiacSvgPaths';
 
 interface ZodiacRingProps {
   cx: number;
@@ -30,7 +29,7 @@ function toSvgAngle(longitude: number, ascendant: number): number {
 }
 
 const ZodiacRing: React.FC<ZodiacRingProps> = ({ cx, cy, outerRadius, innerRadius, ascendant }) => {
-  const glyphSize = (outerRadius - innerRadius) * 0.55;
+  const glyphSize = (outerRadius - innerRadius) * 0.62;
 
   return (
     <g>
@@ -54,24 +53,21 @@ const ZodiacRing: React.FC<ZodiacRingProps> = ({ cx, cy, outerRadius, innerRadiu
         const glyphX = cx + glyphR * Math.cos(midRad);
         const glyphY = cy - glyphR * Math.sin(midRad);
 
-        const svgPath = ZODIAC_SVG_PATHS[sign.name];
-
         return (
           <g key={sign.name}>
             <path d={path} fill={sign.color} fillOpacity={0.15} stroke={sign.color} strokeWidth={0.5} />
-            {/* SVG glyph rendered as path */}
-            {svgPath && (
-              <g transform={`translate(${glyphX - glyphSize / 2}, ${glyphY - glyphSize / 2}) scale(${glyphSize / 24})`}>
-                <path
-                  d={svgPath}
-                  fill="none"
-                  stroke={sign.color}
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </g>
-            )}
+            {/* Glifo tradicional (fonte de símbolos), mesmo da lista de posições */}
+            <text
+              x={glyphX}
+              y={glyphY}
+              textAnchor="middle"
+              dominantBaseline="central"
+              fill={sign.color}
+              fontSize={glyphSize}
+              className="astro-glyph"
+            >
+              {sign.glyph}
+            </text>
           </g>
         );
       })}

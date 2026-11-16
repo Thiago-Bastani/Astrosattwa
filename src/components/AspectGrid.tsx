@@ -61,6 +61,7 @@ const AspectGrid: React.FC<AspectGridProps> = ({ planets }) => {
               fill={PLANET_COLORS[p.name] || '#fff'}
               fontSize="18"
               fontWeight="bold"
+              className="astro-glyph"
             >
               {p.glyph}
             </text>
@@ -90,6 +91,7 @@ const AspectGrid: React.FC<AspectGridProps> = ({ planets }) => {
                       dominantBaseline="central"
                       fill={aspect.color}
                       fontSize="17"
+                      className="astro-glyph"
                     >
                       {aspect.glyph}
                     </text>

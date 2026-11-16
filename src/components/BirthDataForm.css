@@ -44,7 +44,7 @@
 }
 
 .step-btn:active {
-  background: rgba(201, 168, 76, 0.18);
+  background: rgba(var(--as-accent-rgb), 0.18);
 }
 
 .stepper-input {
@@ -83,7 +83,7 @@
   padding: 0 14px;
   border-radius: var(--as-radius);
   background: var(--as-gold-faint);
-  border: 1px solid rgba(201, 168, 76, 0.35);
+  border: 1px solid rgba(var(--as-accent-rgb), 0.35);
   color: var(--as-gold);
   font-size: 0.8rem;
   font-weight: 600;
@@ -91,5 +91,5 @@
 }
 
 .now-btn:active {
-  background: rgba(201, 168, 76, 0.25);
+  background: rgba(var(--as-accent-rgb), 0.25);
 }

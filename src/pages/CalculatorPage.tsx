@@ -1,14 +1,16 @@
-import React, { useState, useRef } from 'react';
-import { IonButtons, IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonProgressBar } from '@ionic/react';
+import React, { useMemo, useState, useRef } from 'react';
+import { IonContent, IonPage, IonProgressBar } from '@ionic/react';
 import type { GeoLocation, ZodiacSystem } from '../types/astro';
 import type { ConditionSet, ConditionRule, SearchResult, SearchProgress } from '../types/conditions';
 import { findNextMatchingDate } from '../services/dateSearcher';
 import ConditionChips from '../components/ConditionChips';
 import ConditionBuilder from '../components/ConditionBuilder';
-import AspectGrid from '../components/AspectGrid';
+import AppHeader from '../components/AppHeader';
+import ChartPanel from '../components/ChartPanel';
 import PlanetList from '../components/PlanetList';
 import LocationPicker from '../components/LocationPicker';
 import ZodiacToggle from '../components/ZodiacToggle';
+import { getPlanetaryDay } from '../utils/planetary';
 import './CalculatorPage.css';
 
 const WEEKDAYS = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
@@ -41,6 +43,11 @@ const CalculatorPage: React.FC = () => {
   const [noResult, setNoResult] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  const resultPlanetaryDay = useMemo(
+    () => (result && location ? getPlanetaryDay(result.date, location) : null),
+    [result, location],
+  );
 
   /* ── Condition management ── */
 
@@ -151,14 +158,11 @@ const CalculatorPage: React.FC = () => {
 
   return (
     <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonTitle className="app-title">Calculadora</IonTitle>
-          <IonButtons slot="end">
-            <ZodiacToggle value={zodiacSystem} onChange={setZodiacSystem} disabled={isSearching} />
-          </IonButtons>
-        </IonToolbar>
-      </IonHeader>
+      <AppHeader
+        title="Calculadora"
+        showDay={false}
+        end={<ZodiacToggle value={zodiacSystem} onChange={setZodiacSystem} disabled={isSearching} />}
+      />
       <IonContent fullscreen className="app-content">
 
         {/* ── Local + período ── */}
@@ -257,13 +261,15 @@ const CalculatorPage: React.FC = () => {
                 </div>
               </div>
             </div>
+            <ChartPanel
+              chart={result.chart}
+              date={result.date}
+              planetaryDay={resultPlanetaryDay}
+              storageKey="as.chartView.calc"
+            />
             <div className="app-section">
               <div className="section-title">Posições</div>
               <PlanetList chart={result.chart} />
-            </div>
-            <div className="app-section">
-              <div className="section-title">Aspectos</div>
-              <AspectGrid planets={result.chart.planets} />
             </div>
           </>
         )}

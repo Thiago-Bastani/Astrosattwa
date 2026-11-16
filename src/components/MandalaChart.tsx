@@ -11,7 +11,7 @@ interface MandalaChartProps {
 }
 
 const MandalaChart: React.FC<MandalaChartProps> = ({ data, size = 500 }) => {
-  const margin = size * 0.09; // espaço só para as setas e rótulos ASC/DSC/MC/IC
+  const margin = size * 0.055; // só as setas curtas; rótulos ficam ao lado delas
   const viewSize = size + margin * 2;
   const cx = viewSize / 2;
   const cy = viewSize / 2;
@@ -36,8 +36,8 @@ const MandalaChart: React.FC<MandalaChartProps> = ({ data, size = 500 }) => {
         className="mandala-chart"
       >
         {/* Background circles */}
-        <circle cx={cx} cy={cy} r={outerRadius + 2} fill="none" stroke="rgba(201,168,76,0.3)" strokeWidth={1} />
-        <circle cx={cx} cy={cy} r={innerRadius} fill="none" stroke="rgba(201,168,76,0.2)" strokeWidth={0.5} />
+        <circle cx={cx} cy={cy} r={outerRadius + 2} fill="none" style={{ stroke: 'rgba(var(--as-accent-rgb), 0.35)' }} strokeWidth={1} />
+        <circle cx={cx} cy={cy} r={innerRadius} fill="none" style={{ stroke: 'rgba(var(--as-accent-rgb), 0.25)' }} strokeWidth={0.5} />
 
         <ZodiacRing cx={cx} cy={cy} outerRadius={outerRadius} innerRadius={innerRadius} ascendant={data.ascendant} />
         <HouseGrid cx={cx} cy={cy} innerRadius={innerRadius} outerRadius={outerRadius} chart={data} />
@@ -55,7 +55,7 @@ const MandalaChart: React.FC<MandalaChartProps> = ({ data, size = 500 }) => {
         ))}
 
         {/* Center dot */}
-        <circle cx={cx} cy={cy} r={2.5} fill="#c9a84c" />
+        <circle cx={cx} cy={cy} r={2.5} style={{ fill: 'var(--as-highlight)' }} />
       </svg>
     </div>
   );

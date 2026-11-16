@@ -182,7 +182,7 @@ const ConditionBuilder: React.FC<Props> = ({ isOpen, onClose, onAdd, targetGroup
         <div className="builder-list">
           {ANGLES.map(a => (
             <div key={a} className="builder-list-item" onClick={() => selectDirectTarget(a)}>
-              <span className="item-glyph" style={{ color: '#c9a84c' }}>{a === 'Ascendant' ? 'AC' : a === 'Descendant' ? 'DC' : a}</span>
+              <span className="item-glyph" style={{ color: 'var(--as-highlight)' }}>{a === 'Ascendant' ? 'AC' : a === 'Descendant' ? 'DC' : a}</span>
               <span className="item-name">{ANGLE_NAMES_PT[a]}</span>
             </div>
           ))}
@@ -191,17 +191,17 @@ const ConditionBuilder: React.FC<Props> = ({ isOpen, onClose, onAdd, targetGroup
         <div className="builder-section-title">Derivados</div>
         <div className="builder-list">
           <div className="builder-list-item" onClick={() => selectDerivedType('signRuler')}>
-            <span className="item-glyph" style={{ color: '#c9a84c' }}>♔</span>
+            <span className="item-glyph" style={{ color: 'var(--as-highlight)' }}>♔</span>
             <span className="item-name">Senhor de um signo</span>
             <span className="item-sub">escolher signo →</span>
           </div>
           <div className="builder-list-item" onClick={() => selectDerivedType('houseRuler')}>
-            <span className="item-glyph" style={{ color: '#c9a84c' }}>♔</span>
+            <span className="item-glyph" style={{ color: 'var(--as-highlight)' }}>♔</span>
             <span className="item-name">Senhor de uma casa</span>
             <span className="item-sub">escolher casa →</span>
           </div>
           <div className="builder-list-item" onClick={() => selectDerivedType('planetSignRuler')}>
-            <span className="item-glyph" style={{ color: '#c9a84c' }}>♔</span>
+            <span className="item-glyph" style={{ color: 'var(--as-highlight)' }}>♔</span>
             <span className="item-name">Senhor do signo de um planeta</span>
             <span className="item-sub">escolher planeta →</span>
           </div>
@@ -234,7 +234,7 @@ const ConditionBuilder: React.FC<Props> = ({ isOpen, onClose, onAdd, targetGroup
           <div className="builder-grid">
             {Array.from({ length: 12 }, (_, i) => i + 1).map(h => (
               <button key={h} className="builder-grid-btn" onClick={() => selectDerivedValue(h)}>
-                <span className="btn-glyph" style={{ color: '#c9a84c' }}>{h}</span>
+                <span className="btn-glyph" style={{ color: 'var(--as-highlight)' }}>{h}</span>
                 <span className="btn-label">Casa {h}</span>
               </button>
             ))}
@@ -313,7 +313,7 @@ const ConditionBuilder: React.FC<Props> = ({ isOpen, onClose, onAdd, targetGroup
             <div className="builder-grid">
               {Array.from({ length: 12 }, (_, i) => i + 1).map(h => (
                 <button key={h} className="builder-grid-btn" onClick={() => finish({ category: 'house', house: h })}>
-                  <span className="btn-glyph" style={{ color: '#c9a84c', fontSize: '1.5rem' }}>{h}</span>
+                  <span className="btn-glyph" style={{ color: 'var(--as-highlight)', fontSize: '1.5rem' }}>{h}</span>
                   <span className="btn-label">Casa {h}</span>
                 </button>
               ))}
@@ -375,7 +375,7 @@ const ConditionBuilder: React.FC<Props> = ({ isOpen, onClose, onAdd, targetGroup
             <div className="builder-grid builder-grid-3">
               {[1, 2, 3].map(d => (
                 <button key={d} className="builder-grid-btn" onClick={() => finish({ category: 'decanate', decanate: d as 1 | 2 | 3 })}>
-                  <span className="btn-glyph" style={{ color: '#c9a84c', fontSize: '1.3rem' }}>{d}°</span>
+                  <span className="btn-glyph" style={{ color: 'var(--as-highlight)', fontSize: '1.3rem' }}>{d}°</span>
                   <span className="btn-label">{d === 1 ? '0°–9°' : d === 2 ? '10°–19°' : '20°–29°'}</span>
                 </button>
               ))}
@@ -475,7 +475,7 @@ const ConditionBuilder: React.FC<Props> = ({ isOpen, onClose, onAdd, targetGroup
               category: 'aspect', aspect: selectedAspect.name,
               aspectAngle: selectedAspect.angle, aspectOrb: selectedAspect.orb, withBody: a,
             })}>
-              <span className="item-glyph" style={{ color: '#c9a84c' }}>{a === 'Ascendant' ? 'AC' : a === 'Descendant' ? 'DC' : a}</span>
+              <span className="item-glyph" style={{ color: 'var(--as-highlight)' }}>{a === 'Ascendant' ? 'AC' : a === 'Descendant' ? 'DC' : a}</span>
               <span className="item-name">{ANGLE_NAMES_PT[a]}</span>
             </div>
           ))}

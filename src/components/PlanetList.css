@@ -57,7 +57,7 @@
 }
 
 .pl-item.open {
-  background: rgba(201, 168, 76, 0.05);
+  background: rgba(var(--as-accent-rgb), 0.05);
 }
 
 .pl-row {

@@ -25,13 +25,13 @@ const HouseGrid: React.FC<HouseGridProps> = ({ cx, cy, innerRadius, outerRadius,
   const { houseCusps, ascendant, mc, descendant, ic } = chart;
 
   const cardinalPoints: CardinalPointDef[] = [
-    { label: 'ASC', longitude: ascendant,   color: '#c9a84c' },
-    { label: 'DSC', longitude: descendant,  color: '#c9a84c' },
+    { label: 'ASC', longitude: ascendant,   color: 'var(--as-highlight)' },
+    { label: 'DSC', longitude: descendant,  color: 'var(--as-highlight)' },
     { label: 'MC',  longitude: mc,          color: '#e74c3c' },
     { label: 'IC',  longitude: ic,          color: '#e74c3c' },
   ];
 
-  const arrowLen = outerRadius * 0.1;
+  const arrowLen = outerRadius * 0.07;
   const arrowWidth = 5;
 
   return (
@@ -58,7 +58,7 @@ const HouseGrid: React.FC<HouseGridProps> = ({ cx, cy, innerRadius, outerRadius,
           <g key={`house-${i}`}>
             <line
               x1={x1} y1={y1} x2={x2} y2={y2}
-              stroke={isCardinal ? '#c9a84c' : 'rgba(255,255,255,0.15)'}
+              style={{ stroke: isCardinal ? 'var(--as-highlight)' : 'rgba(255,255,255,0.15)' }}
               strokeWidth={isCardinal ? 1.5 : 0.5}
             />
             <text
@@ -66,8 +66,8 @@ const HouseGrid: React.FC<HouseGridProps> = ({ cx, cy, innerRadius, outerRadius,
               y={cy - innerRadius * 0.22 * Math.sin(midAngle)}
               textAnchor="middle"
               dominantBaseline="central"
-              fill="rgba(255,255,255,0.3)"
-              fontSize={innerRadius * 0.07}
+              fill="rgba(255,255,255,0.4)"
+              fontSize={innerRadius * 0.09}
             >
               {i + 1}
             </text>
@@ -103,38 +103,36 @@ const HouseGrid: React.FC<HouseGridProps> = ({ cx, cy, innerRadius, outerRadius,
         const wing2X = baseX - arrowWidth * perpCos;
         const wing2Y = baseY + arrowWidth * perpSin;
 
-        // Label position
-        const labelDist = outerRadius + arrowLen + 8;
-        const labelX = cx + labelDist * cosA;
-        const labelY = cy - labelDist * sinA;
-
-        // Text anchor based on angle
-        const angleDeg = ((angle / DEG) % 360 + 360) % 360;
-        let anchor: string;
-        if (angleDeg >= 135 && angleDeg <= 225) anchor = 'end';
-        else if (angleDeg < 45 || angleDeg > 315) anchor = 'start';
-        else anchor = 'middle';
+        // Rótulo ao lado da seta (perpendicular), para não exigir margem extra:
+        // acima das setas horizontais (ASC/DSC), ao lado das verticais (MC/IC).
+        let perp = angle + Math.PI / 2;
+        if (-Math.sin(perp) > 0.01) perp += Math.PI; // prefere o lado de cima
+        const labelFont = innerRadius * 0.09;
+        const sideOffset = arrowWidth + 4 + labelFont * (0.45 + 0.75 * Math.abs(Math.sin(angle)));
+        const radial = outerRadius + 2 + arrowLen * 0.55;
+        const labelX = cx + radial * cosA + sideOffset * Math.cos(perp);
+        const labelY = cy - radial * sinA - sideOffset * Math.sin(perp);
 
         return (
           <g key={label}>
             {/* Emphasis line through the zodiac ring for cardinal points */}
             <line
               x1={lineInner} y1={lineInnerY} x2={lineOuter} y2={lineOuterY}
-              stroke={color} strokeWidth={1} strokeOpacity={0.5}
+              style={{ stroke: color }} strokeWidth={1} strokeOpacity={0.5}
             />
             {/* Arrow triangle pointing inward */}
             <polygon
               points={`${tipX},${tipY} ${wing1X},${wing1Y} ${wing2X},${wing2Y}`}
-              fill={color}
+              style={{ fill: color }}
             />
             {/* Label */}
             <text
               x={labelX}
               y={labelY}
-              textAnchor={anchor}
+              textAnchor="middle"
               dominantBaseline="central"
-              fill={color}
-              fontSize={innerRadius * 0.1}
+              style={{ fill: color }}
+              fontSize={labelFont}
               fontWeight="bold"
             >
               {label}

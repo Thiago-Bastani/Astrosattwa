@@ -1,59 +1,105 @@
 .sky-status {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
 }
 
 .sky-tile {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   min-width: 0;
-  padding: 7px 8px;
+  padding: 6px 9px 7px;
   background: var(--as-surface);
   border: 1px solid var(--as-border);
   border-radius: var(--as-radius);
+  text-align: left;
+  color: inherit;
+  font: inherit;
+}
+
+.sky-tile-toggle {
+  cursor: pointer;
+}
+
+.sky-tile-toggle:active {
+  background: rgba(var(--as-accent-rgb), 0.14);
+}
+
+.sky-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
 }
 
 .sky-label {
   font-size: 0.58rem;
   text-transform: uppercase;
-  letter-spacing: 0.8px;
+  letter-spacing: 0.7px;
   color: var(--as-gold-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sky-swap {
+  font-size: 0.72rem;
+  letter-spacing: 0;
+}
+
+.sky-meta {
+  flex-shrink: 0;
+  font-size: 0.62rem;
+  color: var(--as-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .sky-value {
   display: flex;
   align-items: center;
   gap: 5px;
+  min-width: 0;
+}
+
+.sky-icon {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.sky-text {
+  min-width: 0;
   font-family: Georgia, serif;
   font-size: 0.8rem;
-  line-height: 1.2;
+  line-height: 1.25;
   color: var(--as-gold);
-  min-width: 0;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sky-extra {
+  font-family: system-ui, sans-serif;
+  font-size: 0.64rem;
+  color: var(--as-muted);
 }
 
 .sky-emoji {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.sky-planet {
   font-size: 1rem;
   line-height: 1;
-  flex-shrink: 0;
 }
 
 .sky-tattwa-shape {
   display: flex;
-  flex-shrink: 0;
   filter: drop-shadow(0 0 4px var(--glow)) brightness(1.2);
 }
 
 .sky-tattwa-shape svg {
   display: block;
-}
-
-.sky-sub {
-  font-size: 0.64rem;
-  color: var(--as-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }

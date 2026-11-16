@@ -1,534 +1,515 @@
 import React from 'react';
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonCard, IonCardHeader, IonCardTitle, IonCardContent } from '@ionic/react';
-import { ZODIAC_SIGNS, PLANET_GLYPHS, PLANET_COLORS, DIGNITY_TABLE } from '../utils/zodiac';
-import { PLANET_NAMES_PT, SIGN_NAMES_PT } from '../utils/astroLabels';
-import { ZODIAC_SVG_PATHS } from '../utils/zodiacSvgPaths';
+import { IonContent, IonPage } from '@ionic/react';
+import { ZODIAC_SIGNS, PLANET_GLYPHS, PLANET_COLORS, DIGNITY_TABLE, SIGN_RULERS } from '../utils/zodiac';
+import { PLANET_NAMES_PT, SIGN_NAMES_PT, MODALITY_MAP } from '../utils/astroLabels';
+import { MANAZIL, NAKSHATRAS } from '../utils/lunarMansions';
+import { CHALDEAN_ORDER, DAY_RULERS, WEEKDAY_NAMES_PT } from '../utils/planetary';
+import { DAY_PALETTES } from '../theme/palettes';
+import { calculateLahiriAyanamsa } from '../services/astroCalculator';
+import AppHeader from '../components/AppHeader';
 import './ReferencePage.css';
 
-const ELEMENT_NAMES: Record<string, { pt: string; color: string }> = {
-  fire:  { pt: 'Fogo',  color: '#e74c3c' },
-  earth: { pt: 'Terra', color: '#27ae60' },
-  air:   { pt: 'Ar',    color: '#f1c40f' },
-  water: { pt: 'Água',  color: '#3498db' },
-};
+/* ════════════════ Blocos de layout ════════════════ */
 
-const OPPOSITES: [string, string][] = [
-  ['Sun', 'Saturn'],
-  ['Moon', 'Saturn'],
-  ['Mercury', 'Jupiter'],
-  ['Venus', 'Mars'],
-  ['Jupiter', 'Mercury'],
-  ['Saturn', 'Sun'],
-];
-
-function SignSvgGlyph({ name, color, size = 14 }: { name: string; color: string; size?: number }) {
-  const path = ZODIAC_SVG_PATHS[name];
-  if (!path) return null;
+function Section({ title, meta, children }: { title: string; meta?: string; children: React.ReactNode }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" style={{ verticalAlign: 'middle', marginRight: 2, flexShrink: 0 }}>
-      <path
-        d={path}
-        fill="none"
-        stroke={color}
-        strokeWidth={2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+    <details className="ref-section">
+      <summary>
+        <span className="ref-section-title">{title}</span>
+        {meta && <span className="ref-section-meta">{meta}</span>}
+      </summary>
+      <div className="ref-body">{children}</div>
+    </details>
   );
 }
 
-function SignLabel({ names, color }: { names: string[]; color: string }) {
+function Sub({ children }: { children: React.ReactNode }) {
+  return <h4 className="ref-sub">{children}</h4>;
+}
+
+function Lede({ children }: { children: React.ReactNode }) {
+  return <p className="ref-lede">{children}</p>;
+}
+
+function Note({ children }: { children: React.ReactNode }) {
+  return <p className="ref-note">{children}</p>;
+}
+
+function Defs({ items }: { items: [React.ReactNode, React.ReactNode][] }) {
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
-      {names.map((n, i) => (
-        <React.Fragment key={n}>
-          {i > 0 && <span style={{ marginRight: 2 }}>,</span>}
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
-            <SignSvgGlyph name={n} color={color} size={14} />
-            <span>{SIGN_NAMES_PT[n] || n}</span>
-          </span>
-        </React.Fragment>
+    <dl className="ref-dl">
+      {items.map(([term, desc], i) => (
+        <div key={i} className="ref-dl-row">
+          <dt>{term}</dt>
+          <dd>{desc}</dd>
+        </div>
       ))}
+    </dl>
+  );
+}
+
+function Table({ head, rows, numeric = [] }: { head: string[]; rows: React.ReactNode[][]; numeric?: number[] }) {
+  return (
+    <div className="ref-table-wrap">
+      <table className="ref-table">
+        <thead>
+          <tr>{head.map((h, i) => <th key={i} className={numeric.includes(i) ? 'num' : ''}>{h}</th>)}</tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => (
+            <tr key={i}>{r.map((c, j) => <td key={j} className={numeric.includes(j) ? 'num' : ''}>{c}</td>)}</tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/* ════════════════ Helpers de formatação ════════════════ */
+
+function Planet({ name }: { name: string }) {
+  return (
+    <span className="ref-nowrap">
+      <span className="astro-glyph ref-glyph" style={{ color: PLANET_COLORS[name] }}>{PLANET_GLYPHS[name]}</span>
+      {PLANET_NAMES_PT[name] || name}
     </span>
   );
 }
 
-/* ── Tabela de Regências ── */
-function RulershipsCard() {
-  const planetKeys = Object.keys(DIGNITY_TABLE);
+function Sign({ name }: { name: string }) {
+  const s = ZODIAC_SIGNS.find(z => z.name === name);
   return (
-    <IonCard className="ref-card">
-      <IonCardHeader>
-        <IonCardTitle className="ref-card-title">Tabela de Regências</IonCardTitle>
-      </IonCardHeader>
-      <IonCardContent>
-        <div className="ref-table-wrap">
-          <table className="ref-table">
-            <thead>
-              <tr>
-                <th>Planeta</th>
-                <th>Domicílio</th>
-                <th>Exaltação</th>
-                <th>Queda</th>
-                <th>Exílio</th>
-              </tr>
-            </thead>
-            <tbody>
-              {planetKeys.map(p => {
-                const d = DIGNITY_TABLE[p];
-                return (
-                  <tr key={p}>
-                    <td style={{ color: PLANET_COLORS[p] }}>
-                      {PLANET_GLYPHS[p]} {PLANET_NAMES_PT[p]}
-                    </td>
-                    <td style={{ color: '#2ecc71' }}><SignLabel names={d.domicilio} color="#2ecc71" /></td>
-                    <td style={{ color: '#f1c40f' }}><SignLabel names={d.exaltacao} color="#f1c40f" /></td>
-                    <td style={{ color: '#e74c3c' }}><SignLabel names={d.queda} color="#e74c3c" /></td>
-                    <td style={{ color: '#95a5a6' }}><SignLabel names={d.exilio} color="#95a5a6" /></td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </IonCardContent>
-    </IonCard>
+    <span className="ref-nowrap">
+      <span className="astro-glyph ref-glyph" style={{ color: s?.color }}>{s?.glyph}</span>
+      {SIGN_NAMES_PT[name] || name}
+    </span>
   );
 }
 
-/* ── Elementos ── */
-function ElementsCard() {
-  const elements = ['fire', 'earth', 'air', 'water'] as const;
+function Signs({ names }: { names: string[] }) {
+  return <>{names.map((n, i) => <React.Fragment key={n}>{i > 0 && ', '}<Sign name={n} /></React.Fragment>)}</>;
+}
+
+/** Longitude eclíptica → "♈ 13°20'" */
+function Lon({ deg }: { deg: number }) {
+  const sign = ZODIAC_SIGNS[Math.floor(deg / 30) % 12];
+  const d = deg % 30;
+  let whole = Math.floor(d);
+  let min = Math.round((d - whole) * 60);
+  if (min === 60) { whole += 1; min = 0; }
   return (
-    <IonCard className="ref-card">
-      <IonCardHeader>
-        <IonCardTitle className="ref-card-title">Elementos</IonCardTitle>
-      </IonCardHeader>
-      <IonCardContent>
-        {elements.map(el => {
-          const info = ELEMENT_NAMES[el];
-          const signs = ZODIAC_SIGNS.filter(s => s.element === el);
-          return (
-            <div key={el} className="element-row" style={{ borderLeftColor: info.color }}>
-              <span className="element-name" style={{ color: info.color }}>{info.pt}</span>
-              <span className="element-signs">
-                {signs.map(s => (
-                  <span key={s.name} className="element-sign-chip" style={{ color: info.color, borderColor: `${info.color}44`, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-                    <SignSvgGlyph name={s.name} color={info.color} size={13} />
-                    {SIGN_NAMES_PT[s.name]}
-                  </span>
-                ))}
-              </span>
-            </div>
-          );
+    <span className="ref-nowrap">
+      <span className="astro-glyph ref-glyph" style={{ color: sign.color }}>{sign.glyph}</span>
+      {whole}°{String(min).padStart(2, '0')}'
+    </span>
+  );
+}
+
+const ELEMENT_PT: Record<string, string> = { fire: 'Fogo', earth: 'Terra', air: 'Ar', water: 'Água' };
+const MODALITY_PT: Record<string, string> = { cardinal: 'Cardinal', fixed: 'Fixo', mutable: 'Mutável' };
+const TRADITIONAL_RULER: Record<string, string> = { Scorpio: 'Mars', Aquarius: 'Saturn', Pisces: 'Jupiter' };
+
+/* ════════════════ Seções ════════════════ */
+
+function SignsSection() {
+  return (
+    <Section title="Signos" meta="12 · 30° cada">
+      <Lede>
+        Divisões de 30° da eclíptica, contadas a partir de 0° Áries. Cada signo combina um elemento,
+        uma modalidade e uma polaridade.
+      </Lede>
+      <Table
+        head={['Signo', 'Início', 'Elemento', 'Modalidade', 'Polaridade', 'Regente']}
+        rows={ZODIAC_SIGNS.map((s, i) => [
+          <Sign name={s.name} />,
+          `${i * 30}°`,
+          ELEMENT_PT[s.element],
+          MODALITY_PT[MODALITY_MAP[s.name]],
+          s.element === 'fire' || s.element === 'air' ? 'Positiva' : 'Negativa',
+          <>
+            <Planet name={SIGN_RULERS[s.name]} />
+            {TRADITIONAL_RULER[s.name] && (
+              <span className="ref-muted"> (trad. {PLANET_NAMES_PT[TRADITIONAL_RULER[s.name]]})</span>
+            )}
+          </>,
+        ])}
+        numeric={[1]}
+      />
+      <Note>
+        O app usa os regentes modernos de Escorpião, Aquário e Peixes (Plutão, Urano, Netuno);
+        o regente tradicional aparece entre parênteses.
+      </Note>
+    </Section>
+  );
+}
+
+function DignitiesSection() {
+  const planets = Object.keys(DIGNITY_TABLE);
+  return (
+    <Section title="Regências e dignidades" meta="10 planetas">
+      <Defs items={[
+        ['Domicílio', 'Signo regido pelo planeta.'],
+        ['Exílio', 'Signo oposto ao domicílio.'],
+        ['Exaltação', 'Signo de exaltação atribuído pela tradição.'],
+        ['Queda', 'Signo oposto à exaltação.'],
+      ]} />
+      <Table
+        head={['Planeta', 'Domicílio', 'Exaltação', 'Queda', 'Exílio']}
+        rows={planets.map(p => {
+          const d = DIGNITY_TABLE[p];
+          return [<Planet name={p} />, <Signs names={d.domicilio} />, <Signs names={d.exaltacao} />, <Signs names={d.queda} />, <Signs names={d.exilio} />];
         })}
-      </IonCardContent>
-    </IonCard>
+      />
+      <Sub>Oposições de domicílio</Sub>
+      <Lede>Pares de planetas cujos domicílios ficam em signos opostos.</Lede>
+      <Table
+        head={['Planeta', 'Domicílio', 'Oposto', 'Domicílio']}
+        rows={[
+          ['Sun', 'Saturn'], ['Moon', 'Saturn'], ['Mercury', 'Jupiter'], ['Venus', 'Mars'],
+        ].map(([a, b]) => [
+          <Planet name={a} />, <Signs names={DIGNITY_TABLE[a].domicilio} />,
+          <Planet name={b} />, <Signs names={DIGNITY_TABLE[b].domicilio} />,
+        ])}
+      />
+    </Section>
   );
 }
 
-/* ── Planetas Opostos ── */
-function OppositesCard() {
-  return (
-    <IonCard className="ref-card">
-      <IonCardHeader>
-        <IonCardTitle className="ref-card-title">Planetas Opostos</IonCardTitle>
-      </IonCardHeader>
-      <IonCardContent>
-        <div className="ref-table-wrap">
-          <table className="ref-table">
-            <thead>
-              <tr><th>Planeta</th><th></th><th>Oposto</th></tr>
-            </thead>
-            <tbody>
-              {OPPOSITES.map(([a, b], i) => (
-                <tr key={i}>
-                  <td style={{ color: PLANET_COLORS[a] }}>
-                    {PLANET_GLYPHS[a]} {PLANET_NAMES_PT[a]}
-                  </td>
-                  <td style={{ color: 'rgba(255,255,255,0.3)', textAlign: 'center' }}>{'\u260D'}</td>
-                  <td style={{ color: PLANET_COLORS[b] }}>
-                    {PLANET_GLYPHS[b]} {PLANET_NAMES_PT[b]}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </IonCardContent>
-    </IonCard>
-  );
-}
-
-/* ── Aspectos ── */
-const ASPECT_INFO: { name: string; angle: number; glyph: string; color: string; element: string; rhythm: string; description: string }[] = [
-  {
-    name: 'Conjunção', angle: 0, glyph: '\u260C', color: '#f1c40f',
-    element: 'Mesmo elemento', rhythm: 'Mesmo ritmo',
-    description: 'Fusão de energias planetárias. Intensifica as qualidades dos planetas envolvidos, podendo ser harmônica ou tensa dependendo dos planetas.',
-  },
-  {
-    name: 'Semi-sextil', angle: 30, glyph: '\u26BA', color: '#95a5a6',
-    element: 'Elemento diferente', rhythm: 'Ritmo diferente',
-    description: 'Conexão sutil entre signos vizinhos. Ligação suave que pede atenção e refinamento consciente para integrar energias de naturezas distintas.',
-  },
-  {
-    name: 'Sextil', angle: 60, glyph: '\u26B9', color: '#3498db',
-    element: 'Elemento diferente (compatível)', rhythm: 'Mesmo ritmo',
-    description: 'Aspecto harmonioso que cria oportunidades. Conecta signos de elementos compatíveis (Fogo↔Ar, Terra↔Água). Indica talentos naturais e habilidades que fluem com facilidade.',
-  },
-  {
-    name: 'Quadratura', angle: 90, glyph: '\u25A1', color: '#e74c3c',
-    element: 'Elemento diferente (incompatível)', rhythm: 'Mesmo ritmo',
-    description: 'Tensão e desafio entre planetas do mesmo ritmo mas de elementos conflitantes. Gera fricção que motiva a ação e a superação de obstáculos. É o aspecto do crescimento através do esforço.',
-  },
-  {
-    name: 'Trígono', angle: 120, glyph: '\u25B3', color: '#2ecc71',
-    element: 'Mesmo elemento', rhythm: 'Ritmo diferente',
-    description: 'Grande harmonia e fluxo natural de energia. Conecta signos do mesmo elemento mas de ritmos diferentes. Os planetas cooperam facilmente, trazendo dons inatos e facilidade.',
-  },
-  {
-    name: 'Quincúncio', angle: 150, glyph: '\u26BB', color: '#95a5a6',
-    element: 'Elemento diferente', rhythm: 'Ritmo diferente',
-    description: 'Aspecto de ajuste e adaptação constante. Conecta signos sem afinidade de elemento nem de ritmo, exigindo esforço consciente para integrar energias aparentemente incompatíveis.',
-  },
-  {
-    name: 'Oposição', angle: 180, glyph: '\u260D', color: '#e74c3c',
-    element: 'Elemento diferente (compatível)', rhythm: 'Mesmo ritmo',
-    description: 'Polaridade e confronto entre forças opostas. Conecta signos de elementos compatíveis mas em polaridades opostas. Exige equilíbrio e integração dos opostos.',
-  },
+const ASPECTS: {
+  name: string; glyph: string; color: string; angle: number; orb: number; division: string;
+  element: string; modality: string; polarity: string; kind: string;
+}[] = [
+  { name: 'Conjunção',   glyph: '☌', color: '#f1c40f', angle: 0,   orb: 8, division: '360/1',  element: 'Igual',          modality: 'Igual',     polarity: 'Igual',     kind: 'Maior' },
+  { name: 'Semi-sextil', glyph: '⚺', color: '#95a5a6', angle: 30,  orb: 2, division: '360/12', element: 'Diferente',      modality: 'Diferente', polarity: 'Oposta',    kind: 'Menor' },
+  { name: 'Sextil',      glyph: '⚹', color: '#3498db', angle: 60,  orb: 6, division: '360/6',  element: 'Complementar',   modality: 'Diferente', polarity: 'Igual',     kind: 'Maior' },
+  { name: 'Quadratura',  glyph: '□', color: '#e74c3c', angle: 90,  orb: 8, division: '360/4',  element: 'Diferente',      modality: 'Igual',     polarity: 'Oposta',    kind: 'Maior' },
+  { name: 'Trígono',     glyph: '△', color: '#2ecc71', angle: 120, orb: 8, division: '360/3',  element: 'Igual',          modality: 'Diferente', polarity: 'Igual',     kind: 'Maior' },
+  { name: 'Quincúncio',  glyph: '⚻', color: '#95a5a6', angle: 150, orb: 2, division: '5×360/12', element: 'Diferente',    modality: 'Diferente', polarity: 'Oposta',    kind: 'Menor' },
+  { name: 'Oposição',    glyph: '☍', color: '#e74c3c', angle: 180, orb: 8, division: '360/2',  element: 'Complementar',   modality: 'Igual',     polarity: 'Igual',     kind: 'Maior' },
 ];
 
-function AspectsCard() {
+function AspectsSection() {
   return (
-    <IonCard className="ref-card">
-      <IonCardHeader>
-        <IonCardTitle className="ref-card-title">Aspectos Planetários</IonCardTitle>
-      </IonCardHeader>
-      <IonCardContent className="general-info">
-        {ASPECT_INFO.map(a => (
-          <div key={a.name} className="info-section" style={{ borderLeft: `3px solid ${a.color}`, paddingLeft: 10 }}>
-            <h4 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ color: a.color, fontSize: '1.1rem' }}>{a.glyph}</span>
-              <span>{a.name}</span>
-              <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', fontWeight: 'normal' }}>
-                ({a.angle}°)
-              </span>
-            </h4>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
-              <span style={{
-                fontSize: '0.68rem', padding: '1px 6px', borderRadius: 4,
-                background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.55)',
-                border: '1px solid rgba(255,255,255,0.1)',
-              }}>
-                {a.element}
-              </span>
-              <span style={{
-                fontSize: '0.68rem', padding: '1px 6px', borderRadius: 4,
-                background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.55)',
-                border: '1px solid rgba(255,255,255,0.1)',
-              }}>
-                {a.rhythm}
-              </span>
-            </div>
-            <p>{a.description}</p>
-          </div>
-        ))}
-      </IonCardContent>
-    </IonCard>
+    <Section title="Aspectos" meta="7 · orbes do app">
+      <Lede>
+        Distância angular entre dois pontos da eclíptica. Um aspecto é considerado ativo quando a
+        distância fica dentro do orbe (tolerância) em torno do ângulo exato.
+      </Lede>
+      <Table
+        head={['Aspecto', 'Ângulo', 'Orbe', 'Divisão', 'Tipo']}
+        rows={ASPECTS.map(a => [
+          <span className="ref-nowrap"><span className="astro-glyph ref-glyph" style={{ color: a.color }}>{a.glyph}</span>{a.name}</span>,
+          `${a.angle}°`, `±${a.orb}°`, a.division, a.kind,
+        ])}
+        numeric={[1, 2]}
+      />
+      <Sub>Relação entre os signos envolvidos</Sub>
+      <Lede>Considerando os dois pontos no mesmo grau de seus signos.</Lede>
+      <Table
+        head={['Aspecto', 'Elemento', 'Modalidade', 'Polaridade']}
+        rows={ASPECTS.map(a => [a.name, a.element, a.modality, a.polarity])}
+      />
+      <Note>Elementos complementares: Fogo–Ar e Terra–Água.</Note>
+    </Section>
   );
 }
 
-/* ── Fases da Lua ── */
-const MOON_PHASE_INFO: { emoji: string; name: string; angle: string; description: string }[] = [
-  { emoji: '🌑', name: 'Lua Nova',          angle: '0°',       description: 'Sol e Lua estão alinhados. Início de ciclo, momento de intenções, semear projetos. A Lua não é visível.' },
-  { emoji: '🌒', name: 'Crescente',         angle: '0°–90°',   description: 'A Lua começa a iluminar seu lado direito. Fase de impulso, primeiros passos, entusiasmo e ação inicial.' },
-  { emoji: '🌓', name: 'Quarto Crescente',  angle: '90°',      description: 'Exatamente metade iluminada. Fase de decisão e esforço. Superar obstáculos para continuar o caminho iniciado na Lua Nova.' },
-  { emoji: '🌔', name: 'Gibosa Crescente',  angle: '90°–180°', description: 'Fase de refinamento. O que foi plantado ganha forma. Aperfeiçoamento, análise e preparação para a culminação.' },
-  { emoji: '🌕', name: 'Lua Cheia',         angle: '180°',     description: 'Sol e Lua em oposição. Máxima iluminação e visibilidade. Revelações, completude, intensidade emocional e colheita.' },
-  { emoji: '🌖', name: 'Gibosa Minguante',  angle: '180°–270°', description: 'Fase de gratidão e compartilhamento. Distribuir o que foi conquistado. Generosidade e transmissão de conhecimento.' },
-  { emoji: '🌗', name: 'Quarto Minguante',  angle: '270°',     description: 'Novamente metade iluminada, agora minguando. Fase de crise de consciência, reorientação e liberação do que não serve.' },
-  { emoji: '🌘', name: 'Minguante',         angle: '270°–360°', description: 'Fase de recolhimento, descanso e integração. Soltar, perdoar e preparar o terreno para o novo ciclo que se aproxima.' },
+const PHASES: { emoji: string; name: string; from: number; to: number }[] = [
+  { emoji: '🌑', name: 'Lua Nova',         from: 337.5, to: 22.5 },
+  { emoji: '🌒', name: 'Crescente',        from: 22.5,  to: 67.5 },
+  { emoji: '🌓', name: 'Quarto Crescente', from: 67.5,  to: 112.5 },
+  { emoji: '🌔', name: 'Gibosa Crescente', from: 112.5, to: 157.5 },
+  { emoji: '🌕', name: 'Lua Cheia',        from: 157.5, to: 202.5 },
+  { emoji: '🌖', name: 'Gibosa Minguante', from: 202.5, to: 247.5 },
+  { emoji: '🌗', name: 'Quarto Minguante', from: 247.5, to: 292.5 },
+  { emoji: '🌘', name: 'Minguante',        from: 292.5, to: 337.5 },
 ];
 
-function MoonPhasesCard() {
+const SYNODIC_MONTH = 29.530589;
+const illum = (a: number) => Math.round((1 - Math.cos(a * Math.PI / 180)) / 2 * 100);
+
+function MoonPhasesSection() {
   return (
-    <IonCard className="ref-card">
-      <IonCardHeader>
-        <IonCardTitle className="ref-card-title">Fases da Lua</IonCardTitle>
-      </IonCardHeader>
-      <IonCardContent className="general-info">
-        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem', marginBottom: 12 }}>
-          A fase lunar é determinada pelo ângulo entre o Sol e a Lua (elongação). O ciclo completo dura aproximadamente 29,5 dias.
-        </p>
-        {MOON_PHASE_INFO.map(p => (
-          <div key={p.name} className="info-section" style={{ borderLeft: '3px solid rgba(201,168,76,0.4)', paddingLeft: 10 }}>
-            <h4 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: '1.2rem' }}>{p.emoji}</span>
-              <span>{p.name}</span>
-              <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.72rem', fontWeight: 'normal' }}>{p.angle}</span>
-            </h4>
-            <p>{p.description}</p>
-          </div>
-        ))}
-      </IonCardContent>
-    </IonCard>
+    <Section title="Fases da Lua" meta="ciclo de 29,53 dias">
+      <Lede>
+        A fase é definida pela elongação: o ângulo entre a Lua e o Sol na eclíptica (0° = conjunção,
+        180° = oposição). O mês sinódico médio dura 29,53 dias.
+      </Lede>
+      <Table
+        head={['Fase', 'Elongação', 'Iluminação', 'Dia do ciclo']}
+        rows={PHASES.map(p => {
+          const center = p.from > p.to ? 0 : (p.from + p.to) / 2;
+          const lo = illum(p.from), hi = illum(p.to);
+          const range = lo === hi ? `${lo}%` : `${Math.min(lo, hi)}–${Math.max(lo, hi)}%`;
+          return [
+            <span className="ref-nowrap"><span className="ref-glyph">{p.emoji}</span>{p.name}</span>,
+            `${p.from}°–${p.to}°`,
+            p.name === 'Lua Nova' ? '0–4%' : p.name === 'Lua Cheia' ? '96–100%' : range,
+            `≈ ${(center / 360 * SYNODIC_MONTH).toFixed(1)}`,
+          ];
+        })}
+        numeric={[3]}
+      />
+      <Note>Faixas de 45° usadas pelo app. Iluminação = (1 − cos elongação) / 2.</Note>
+    </Section>
   );
 }
 
-/* ── Mansões Lunares (Nakshatras) ── */
-const NAKSHATRA_DATA: { name: string; lord: string; devata: string; symbol: string; gana: 'Deva' | 'Manushya' | 'Rakshasa'; sign: string }[] = [
-  { name: 'Ashwini',           lord: 'Ketu',     devata: 'Ashwins',       symbol: 'Cabeça de cavalo',      gana: 'Deva',      sign: 'Áries'        },
-  { name: 'Bharani',           lord: 'Vênus',    devata: 'Yama',          symbol: 'Yoni',                  gana: 'Manushya',  sign: 'Áries'        },
-  { name: 'Krittika',          lord: 'Sol',      devata: 'Agni',          symbol: 'Lâmina / chama',        gana: 'Rakshasa',  sign: 'Áries/Touro'  },
-  { name: 'Rohini',            lord: 'Lua',      devata: 'Brahma',        symbol: 'Carroça',               gana: 'Manushya',  sign: 'Touro'        },
-  { name: 'Mrigashira',        lord: 'Marte',    devata: 'Soma',          symbol: 'Cabeça de cervo',       gana: 'Deva',      sign: 'Touro/Gêm.'   },
-  { name: 'Ardra',             lord: 'Rahu',     devata: 'Rudra',         symbol: 'Lágrima / diamante',    gana: 'Manushya',  sign: 'Gêmeos'       },
-  { name: 'Punarvasu',         lord: 'Júpiter',  devata: 'Aditi',         symbol: 'Aljava de flechas',     gana: 'Deva',      sign: 'Gêm./Câncer'  },
-  { name: 'Pushya',            lord: 'Saturno',  devata: 'Brihaspati',    symbol: 'Flor / círculo',        gana: 'Deva',      sign: 'Câncer'       },
-  { name: 'Ashlesha',          lord: 'Mercúrio', devata: 'Nagas',         symbol: 'Serpente enrolada',     gana: 'Rakshasa',  sign: 'Câncer'       },
-  { name: 'Magha',             lord: 'Ketu',     devata: 'Pitrs',         symbol: 'Trono / palanquim',     gana: 'Rakshasa',  sign: 'Leão'         },
-  { name: 'Purva Phalguni',    lord: 'Vênus',    devata: 'Bhaga',         symbol: 'Pés da cama',           gana: 'Manushya',  sign: 'Leão'         },
-  { name: 'Uttara Phalguni',   lord: 'Sol',      devata: 'Aryaman',       symbol: 'Cabeceira da cama',     gana: 'Manushya',  sign: 'Leão/Virgem'  },
-  { name: 'Hasta',             lord: 'Lua',      devata: 'Savitar',       symbol: 'Mão aberta',            gana: 'Deva',      sign: 'Virgem'       },
-  { name: 'Chitra',            lord: 'Marte',    devata: 'Vishvakarma',   symbol: 'Pérola brilhante',      gana: 'Rakshasa',  sign: 'Virgem/Libra' },
-  { name: 'Swati',             lord: 'Rahu',     devata: 'Vayu',          symbol: 'Broto ao vento',        gana: 'Deva',      sign: 'Libra'        },
-  { name: 'Vishakha',          lord: 'Júpiter',  devata: 'Indra & Agni',  symbol: 'Arco do triunfo',       gana: 'Rakshasa',  sign: 'Libra/Escor.' },
-  { name: 'Anuradha',          lord: 'Saturno',  devata: 'Mitra',         symbol: 'Lótus',                 gana: 'Deva',      sign: 'Escorpião'    },
-  { name: 'Jyeshtha',          lord: 'Mercúrio', devata: 'Indra',         symbol: 'Brinco / guarda-chuva', gana: 'Rakshasa',  sign: 'Escorpião'    },
-  { name: 'Mula',              lord: 'Ketu',     devata: 'Nirrti',        symbol: 'Raízes atadas',         gana: 'Rakshasa',  sign: 'Sagitário'    },
-  { name: 'Purva Ashadha',     lord: 'Vênus',    devata: 'Apah',          symbol: 'Leque / cesto',         gana: 'Manushya',  sign: 'Sagitário'    },
-  { name: 'Uttara Ashadha',    lord: 'Sol',      devata: 'Vishvedevas',   symbol: 'Presa de elefante',     gana: 'Manushya',  sign: 'Sag./Capric.' },
-  { name: 'Shravana',          lord: 'Lua',      devata: 'Vishnu',        symbol: 'Três pegadas',          gana: 'Deva',      sign: 'Capricórnio'  },
-  { name: 'Dhanishtha',        lord: 'Marte',    devata: 'Vasus',         symbol: 'Tambor / flauta',       gana: 'Rakshasa',  sign: 'Capric./Aqu.' },
-  { name: 'Shatabhisha',       lord: 'Rahu',     devata: 'Varuna',        symbol: 'Círculo vazio',         gana: 'Rakshasa',  sign: 'Aquário'      },
-  { name: 'Purva Bhadrapada',  lord: 'Júpiter',  devata: 'Aja Ekapada',   symbol: 'Pés do caixão',         gana: 'Manushya',  sign: 'Aqu./Peixes'  },
-  { name: 'Uttara Bhadrapada', lord: 'Saturno',  devata: 'Ahir Budhnya',  symbol: 'Cobra das profundezas', gana: 'Manushya',  sign: 'Peixes'       },
-  { name: 'Revati',            lord: 'Mercúrio', devata: 'Pushan',        symbol: 'Peixe / tambor',        gana: 'Deva',      sign: 'Peixes'       },
+const NAKSHATRA_DATA: { lord: string; devata: string; symbol: string; gana: string }[] = [
+  { lord: 'Ketu',     devata: 'Ashwins',      symbol: 'Cabeça de cavalo',      gana: 'Deva' },
+  { lord: 'Vênus',    devata: 'Yama',         symbol: 'Yoni',                  gana: 'Manushya' },
+  { lord: 'Sol',      devata: 'Agni',         symbol: 'Lâmina',                gana: 'Rakshasa' },
+  { lord: 'Lua',      devata: 'Brahma',       symbol: 'Carroça',               gana: 'Manushya' },
+  { lord: 'Marte',    devata: 'Soma',         symbol: 'Cabeça de cervo',       gana: 'Deva' },
+  { lord: 'Rahu',     devata: 'Rudra',        symbol: 'Lágrima',               gana: 'Manushya' },
+  { lord: 'Júpiter',  devata: 'Aditi',        symbol: 'Aljava',                gana: 'Deva' },
+  { lord: 'Saturno',  devata: 'Brihaspati',   symbol: 'Flor',                  gana: 'Deva' },
+  { lord: 'Mercúrio', devata: 'Nagas',        symbol: 'Serpente enrolada',     gana: 'Rakshasa' },
+  { lord: 'Ketu',     devata: 'Pitrs',        symbol: 'Trono',                 gana: 'Rakshasa' },
+  { lord: 'Vênus',    devata: 'Bhaga',        symbol: 'Pés da cama',           gana: 'Manushya' },
+  { lord: 'Sol',      devata: 'Aryaman',      symbol: 'Cabeceira da cama',     gana: 'Manushya' },
+  { lord: 'Lua',      devata: 'Savitar',      symbol: 'Mão',                   gana: 'Deva' },
+  { lord: 'Marte',    devata: 'Vishvakarma',  symbol: 'Pérola',                gana: 'Rakshasa' },
+  { lord: 'Rahu',     devata: 'Vayu',         symbol: 'Broto',                 gana: 'Deva' },
+  { lord: 'Júpiter',  devata: 'Indra-Agni',   symbol: 'Arco triunfal',         gana: 'Rakshasa' },
+  { lord: 'Saturno',  devata: 'Mitra',        symbol: 'Lótus',                 gana: 'Deva' },
+  { lord: 'Mercúrio', devata: 'Indra',        symbol: 'Brinco',                gana: 'Rakshasa' },
+  { lord: 'Ketu',     devata: 'Nirrti',       symbol: 'Raízes atadas',         gana: 'Rakshasa' },
+  { lord: 'Vênus',    devata: 'Apah',         symbol: 'Leque',                 gana: 'Manushya' },
+  { lord: 'Sol',      devata: 'Vishvedevas',  symbol: 'Presa de elefante',     gana: 'Manushya' },
+  { lord: 'Lua',      devata: 'Vishnu',       symbol: 'Três pegadas',          gana: 'Deva' },
+  { lord: 'Marte',    devata: 'Vasus',        symbol: 'Tambor',                gana: 'Rakshasa' },
+  { lord: 'Rahu',     devata: 'Varuna',       symbol: 'Círculo vazio',         gana: 'Rakshasa' },
+  { lord: 'Júpiter',  devata: 'Aja Ekapada',  symbol: 'Pés do esquife',        gana: 'Manushya' },
+  { lord: 'Saturno',  devata: 'Ahir Budhnya', symbol: 'Serpente',              gana: 'Manushya' },
+  { lord: 'Mercúrio', devata: 'Pushan',       symbol: 'Peixe',                 gana: 'Deva' },
 ];
 
-const LORD_COLORS: Record<string, string> = {
-  'Sol':      '#f1c40f',
-  'Lua':      '#b0c4de',
-  'Marte':    '#e74c3c',
-  'Mercúrio': '#2ecc71',
-  'Júpiter':  '#e67e22',
-  'Vênus':    '#3498db',
-  'Saturno':  '#95a5a6',
-  'Rahu':     '#9b59b6',
-  'Ketu':     '#c0392b',
-};
+const DASHA: [string, number][] = [
+  ['Ketu', 7], ['Vênus', 20], ['Sol', 6], ['Lua', 10], ['Marte', 7],
+  ['Rahu', 18], ['Júpiter', 16], ['Saturno', 19], ['Mercúrio', 17],
+];
 
-const GANA_COLORS: Record<string, string> = {
-  'Deva':      '#2ecc71',
-  'Manushya':  '#f1c40f',
-  'Rakshasa':  '#e74c3c',
-};
-
-const DASHA_YEARS: Record<string, number> = {
-  'Ketu': 7, 'Vênus': 20, 'Sol': 6, 'Lua': 10, 'Marte': 7,
-  'Rahu': 18, 'Júpiter': 16, 'Saturno': 19, 'Mercúrio': 17,
-};
-
-function LunarMansionsCard() {
+function NakshatrasSection() {
+  const span = 360 / 27;
   return (
-    <IonCard className="ref-card">
-      <IonCardHeader>
-        <IonCardTitle className="ref-card-title">Mansões Lunares — Nakshatras</IonCardTitle>
-      </IonCardHeader>
-      <IonCardContent className="general-info">
-
-        <div className="info-section" style={{ borderLeft: '3px solid rgba(201,168,76,0.4)', paddingLeft: 10 }}>
-          <p>
-            No Jyotish (astrologia védica), os <strong>Nakshatras</strong> são a espinha dorsal do sistema. Enquanto os 12 signos descrevem qualidades gerais, os 27 Nakshatras revelam a <em>natureza específica</em> da energia em cada grau do céu, com muito mais precisão e profundidade.
-          </p>
-          <p>
-            Cada Nakshatra possui um <strong>Graha Swami</strong> (planeta regente), uma <strong>Devata</strong> (deidade presidindo sua energia), um <strong>símbolo</strong> que condensa seu significado arquetípico e um <strong>Gana</strong> (natureza):
-          </p>
-          <p>
-            <span style={{ color: GANA_COLORS['Deva'] }}>● Deva</span> — natureza divina, elevada, altruísta.{'  '}
-            <span style={{ color: GANA_COLORS['Manushya'] }}>● Manushya</span> — natureza humana, equilibrada.{'  '}
-            <span style={{ color: GANA_COLORS['Rakshasa'] }}>● Rakshasa</span> — natureza intensa, transformadora.
-          </p>
-        </div>
-
-        <div className="ref-table-wrap">
-          <table className="ref-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Nakshatra</th>
-                <th>Regente</th>
-                <th>Devata</th>
-                <th>Símbolo</th>
-                <th>Gana</th>
-                <th>Signo</th>
-              </tr>
-            </thead>
-            <tbody>
-              {NAKSHATRA_DATA.map((n, i) => (
-                <tr key={n.name}>
-                  <td style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.72rem' }}>{i + 1}</td>
-                  <td style={{ color: '#c9a84c' }}>{n.name}</td>
-                  <td style={{ color: LORD_COLORS[n.lord] ?? '#fff' }}>{n.lord}</td>
-                  <td style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.78rem' }}>{n.devata}</td>
-                  <td style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem', fontStyle: 'italic' }}>{n.symbol}</td>
-                  <td style={{ color: GANA_COLORS[n.gana], fontSize: '0.75rem' }}>{n.gana}</td>
-                  <td style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem' }}>{n.sign}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="info-section" style={{ borderLeft: '3px solid #9b59b6', paddingLeft: 10, marginTop: 16 }}>
-          <h4 style={{ color: '#9b59b6' }}>Vimshottari Dasha — O Tempo Regido pelos Nakshatras</h4>
-          <p>
-            O sistema <strong>Vimshottari Dasha</strong> é o método preditivo mais usado no Jyotish. Cada planeta rege um período de vida cujo início é determinado pelo <strong>Nakshatra da Lua natal</strong>. O ciclo completo dura 120 anos.
-          </p>
-          <div className="ref-table-wrap">
-            <table className="ref-table">
-              <thead>
-                <tr><th>Planeta</th><th>Anos</th><th>Nakshatras que ativa</th></tr>
-              </thead>
-              <tbody>
-                {Object.entries(DASHA_YEARS).map(([planet, years]) => {
-                  const naks = NAKSHATRA_DATA.filter(n => n.lord === planet).map(n => n.name).join(', ');
-                  return (
-                    <tr key={planet}>
-                      <td style={{ color: LORD_COLORS[planet] ?? '#fff' }}>{planet}</td>
-                      <td style={{ color: 'rgba(255,255,255,0.6)' }}>{years}</td>
-                      <td style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem' }}>{naks}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div className="info-section" style={{ borderLeft: '3px solid rgba(201,168,76,0.4)', paddingLeft: 10 }}>
-          <h4>Outras aplicações védicas dos Nakshatras</h4>
-          <p><strong>Muhurta</strong> — escolha de momentos auspiciosos para iniciar atividades importantes (casamento, viagem, negócios) com base no Nakshatra da Lua do dia.</p>
-          <p><strong>Compatibilidade (Kuta)</strong> — no casamento védico, compara-se o Nakshatra natal dos dois cônjuges em 8 categorias (Ashta Kuta) que avaliam saúde, prosperidade, filhos e harmonia.</p>
-          <p><strong>Pada</strong> — cada Nakshatra é subdividido em 4 padas de 3°20', associados aos signos Navamsha, dando ainda mais precisão à análise natal.</p>
-          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', fontStyle: 'italic', marginTop: 8 }}>
-            A mansão exibida no mapa é sempre calculada com o ayanamsa Lahiri (longitude sideral real da Lua), independente do sistema zodiacal selecionado.
-          </p>
-        </div>
-
-      </IonCardContent>
-    </IonCard>
+    <Section title="Nakshatras" meta="27 · 13°20' cada">
+      <Lede>
+        Divisão védica da eclíptica sideral em 27 partes iguais de 13°20', a partir de 0° Áries sideral.
+        Cada nakshatra se divide em 4 padas de 3°20'.
+      </Lede>
+      <Table
+        head={['#', 'Nakshatra', 'Início', 'Regente', 'Devata', 'Símbolo', 'Gana']}
+        rows={NAKSHATRAS.map((name, i) => {
+          const n = NAKSHATRA_DATA[i];
+          return [i + 1, <span className="ref-hl">{name}</span>, <Lon deg={i * span} />, n.lord, n.devata, n.symbol, n.gana];
+        })}
+        numeric={[0]}
+      />
+      <Defs items={[
+        ['Regente', 'Planeta (graha) associado; Rahu e Ketu são os nodos lunares.'],
+        ['Gana', 'Classificação tradicional em três grupos: Deva, Manushya, Rakshasa.'],
+        ['Pada', "Quarto de nakshatra (3°20'), associado a um signo da divisão Navamsha."],
+      ]} />
+      <Sub>Vimshottari Dasha</Sub>
+      <Lede>
+        Sistema de períodos planetários com ciclo total de 120 anos. A sequência começa pelo regente
+        do nakshatra ocupado pela Lua no momento de referência.
+      </Lede>
+      <Table
+        head={['Regente', 'Anos', 'Nakshatras']}
+        rows={DASHA.map(([lord, years]) => [
+          lord, years,
+          <span className="ref-muted">{NAKSHATRAS.filter((_, i) => NAKSHATRA_DATA[i].lord === lord).join(', ')}</span>,
+        ])}
+        numeric={[1]}
+      />
+      <Note>No app, o nakshatra é calculado com ayanamsa Lahiri, independente do sistema zodiacal selecionado.</Note>
+    </Section>
   );
 }
 
-/* ── Sideral vs. Tropical ── */
-function ZodiacSystemsCard() {
+function ManazilSection() {
+  const span = 360 / 28;
   return (
-    <IonCard className="ref-card">
-      <IonCardHeader>
-        <IonCardTitle className="ref-card-title">Zodíaco Sideral vs. Tropical</IonCardTitle>
-      </IonCardHeader>
-      <IonCardContent className="general-info">
-        <div className="info-section" style={{ borderLeft: '3px solid #3498db', paddingLeft: 10 }}>
-          <h4 style={{ color: '#3498db' }}>Zodíaco Tropical</h4>
-          <p>Baseia-se nas estações do ano. O ponto 0° de Áries é fixado no equinócio vernal (momento em que o Sol cruza o equador celeste em direção ao norte), independentemente da posição real das estrelas.</p>
-          <p>É o sistema predominante na astrologia ocidental moderna. Reflete os ciclos sazonais da Terra e a relação do Sol com o planeta.</p>
-        </div>
-        <div className="info-section" style={{ borderLeft: '3px solid #e67e22', paddingLeft: 10 }}>
-          <h4 style={{ color: '#e67e22' }}>Zodíaco Sideral</h4>
-          <p>Baseia-se na posição <em>real</em> dos astros em relação às estrelas fixas. O ponto 0° de Áries é alinhado com a constelação de Áries no céu.</p>
-          <p>É o sistema do Jyotish (astrologia védica indiana) e da astrologia helenística clássica. Reflete as posições astronômicas efetivas dos planetas.</p>
-        </div>
-        <div className="info-section" style={{ borderLeft: '3px solid #c9a84c', paddingLeft: 10 }}>
-          <h4 style={{ color: '#c9a84c' }}>Ayanamsa — a diferença entre os dois</h4>
-          <p>Devido à <strong>precessão dos equinócios</strong> — um lento giro do eixo terrestre com período de ~26.000 anos — o equinócio vernal se desloca gradualmente em relação às estrelas fixas. Esse deslocamento acumulado é chamado de <strong>ayanamsa</strong>.</p>
-          <p>Há cerca de 2.000 anos os dois zodíacos coincidiam. Hoje o ayanamsa é de aproximadamente <span style={{ color: '#c9a84c' }}>24°</span> e cresce ~1,4° por século.</p>
-          <p>Para converter tropical → sideral basta subtrair o ayanamsa da longitude tropical. Um planeta em 10° de Touro tropical estará em ~16° de Áries sideral.</p>
-        </div>
-        <div className="info-section" style={{ borderLeft: '3px solid #9b59b6', paddingLeft: 10 }}>
-          <h4 style={{ color: '#9b59b6' }}>Ayanamsa Lahiri (Chitrapaksha)</h4>
-          <p>Existem dezenas de sistemas de ayanamsa. Este app utiliza o <strong>Lahiri</strong>, adotado oficialmente pelo governo indiano desde 1955 como padrão nacional para o Panchanga (calendário védico).</p>
-          <p>Ele é baseado na posição da estrela <strong>Spica (Chitra)</strong>, que define 0° de Libra sideral. É o ayanamsa mais amplamente utilizado no Jyotish contemporâneo.</p>
-          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', fontStyle: 'italic' }}>
-            Fórmula usada: ayanamsa = 23,85° + 1,3972° × T, onde T são séculos julianos a partir de J2000.0.
-          </p>
-        </div>
-      </IonCardContent>
-    </IonCard>
+    <Section title="Manazil (mansões árabes)" meta="28 · 12°51' cada">
+      <Lede>
+        Divisão da eclíptica em 28 partes iguais de 12°51'26", próximo ao deslocamento diário médio da
+        Lua. Origem na astronomia árabe; registrada no Picatrix e em Agrippa.
+      </Lede>
+      <Table
+        head={['#', 'Manzil', 'Tradução', 'Início']}
+        rows={MANAZIL.map((m, i) => [i + 1, <span className="ref-hl">{m.name}</span>, m.meaning, <Lon deg={i * span} />])}
+        numeric={[0]}
+      />
+      <Note>No app, as manazil são medidas no zodíaco tropical a partir de 0° Áries, independente do sistema selecionado.</Note>
+    </Section>
   );
 }
 
-/* ── Informações Gerais ── */
-function GeneralInfoCard() {
+function PlanetaryHoursSection() {
   return (
-    <IonCard className="ref-card">
-      <IonCardHeader>
-        <IonCardTitle className="ref-card-title">Informações Gerais</IonCardTitle>
-      </IonCardHeader>
-      <IonCardContent className="general-info">
-        <div className="info-section">
-          <h4>Dignidades Planetárias</h4>
-          <p><span style={{ color: '#2ecc71' }}>Domicílio</span> — O planeta está no signo que rege. Expressa-se com naturalidade e força.</p>
-          <p><span style={{ color: '#f1c40f' }}>Exaltação</span> — O planeta está em um signo que potencializa suas qualidades.</p>
-          <p><span style={{ color: '#e74c3c' }}>Queda</span> — O planeta está no signo oposto à exaltação. Suas qualidades ficam enfraquecidas.</p>
-          <p><span style={{ color: '#95a5a6' }}>Exílio</span> — O planeta está no signo oposto ao domicílio. Expressa-se com dificuldade.</p>
-        </div>
-        <div className="info-section">
-          <h4>Decanatos</h4>
-          <p>Cada signo de 30° é dividido em 3 decanatos de 10°:</p>
-          <p><strong>1° Decanato</strong> (0°–9°) — Regido pelo próprio signo.</p>
-          <p><strong>2° Decanato</strong> (10°–19°) — Regido pelo próximo signo do mesmo elemento.</p>
-          <p><strong>3° Decanato</strong> (20°–29°) — Regido pelo último signo do mesmo elemento.</p>
-        </div>
-        <div className="info-section">
-          <h4>Retrogradação</h4>
-          <p>Quando um planeta parece se mover na direção contrária no céu (movimento aparente). Indica revisão, introspecção e reavaliação das áreas regidas pelo planeta. Indicado pelo símbolo <span style={{ color: '#e74c3c' }}>℞</span>.</p>
-        </div>
-        <div className="info-section">
-          <h4>Pontos Especiais</h4>
-          <p><strong>Quíron ⚷</strong> — O "curador ferido". Asteroide que representa nossas feridas mais profundas e o potencial de cura que nasce delas. Indica onde podemos ajudar os outros através da nossa própria experiência de dor.</p>
-          <p><strong>Lilith (Lua Negra)</strong> — O apogeu lunar médio. Representa desejos inconscientes e aspectos ocultos da personalidade.</p>
-          <p><strong>Nodo Norte ☊</strong> — O caminho kármico de evolução. Indica o que devemos desenvolver nesta vida.</p>
-          <p><strong>Nodo Sul ☋</strong> — Habilidades trazidas de vidas passadas. Zona de conforto a ser transcendida.</p>
-          <p><strong>Vertex</strong> — Ponto de encontros fatídicos. Associado a eventos e pessoas que entram em nossa vida de forma inesperada.</p>
-        </div>
-        <div className="info-section">
-          <h4>Tattwas</h4>
-          <p>Os Tattwas são os 5 elementos sutis do sistema tântrico. No App, o ciclo se inicia ao nascer do sol e cada Tattwa dura 24 minutos, totalizando um ciclo de 120 minutos que se repete continuamente:</p>
-          <p><strong>Akasha</strong> (Éter) → <strong>Vayu</strong> (Ar) → <strong>Tejas</strong> (Fogo) → <strong>Prithvi</strong> (Terra) → <strong>Apas</strong> (Água)</p>
-          <p>Cada Tattwa principal contém 5 sub-tattwas de 4,8 minutos cada, na mesma sequência.</p>
-          <p style={{ color: '#c9a84c', fontSize: '0.75rem', marginTop: 8, fontStyle: 'italic' }}>
-            OBS.: A sequência dos Tattwas utilizada neste App segue a tradição de Swami Satyananda Saraswati (Tattwa Shuddhi), baseada na ordem de emanação cosmológica do Samkhya. Outras linhagens podem usar ordenações diferentes.
-          </p>
-        </div>
-      </IonCardContent>
-    </IonCard>
+    <Section title="Dias e horas planetárias" meta="ordem caldaica">
+      <Defs items={[
+        ['Dia planetário', 'Do nascer do sol ao nascer do sol seguinte.'],
+        ['Horas diurnas', '12 partes iguais entre o nascer e o pôr do sol.'],
+        ['Horas noturnas', '12 partes iguais entre o pôr do sol e o nascer seguinte.'],
+        ['Duração', 'Variável: depende da data e da latitude. Horas diurnas e noturnas só são iguais nos equinócios.'],
+        ['1ª hora', 'Regida pelo regente do dia.'],
+        ['Sequência', (
+          <>
+            Ordem caldaica:{' '}
+            {CHALDEAN_ORDER.map((p, i) => (
+              <React.Fragment key={p}>
+                {i > 0 && ' → '}
+                <span className="astro-glyph" style={{ color: PLANET_COLORS[p] }}>{PLANET_GLYPHS[p]}</span>
+              </React.Fragment>
+            ))}
+          </>
+        )],
+      ]} />
+      <Table
+        head={['Dia', 'Regente', 'Paleta do app']}
+        rows={DAY_RULERS.map((p, wd) => {
+          const pal = DAY_PALETTES[wd];
+          return [
+            WEEKDAY_NAMES_PT[wd],
+            <Planet name={p} />,
+            <span className="ref-nowrap">
+              <span className="ref-swatch" style={{ background: pal.accent, borderColor: pal.partner }} />
+              <span className="ref-muted">{pal.name}</span>
+            </span>,
+          ];
+        })}
+      />
+      <Note>A ordem dos dias da semana resulta de avançar 24 horas na sequência caldaica a partir de cada regente.</Note>
+    </Section>
   );
 }
 
-const ReferencePage: React.FC = () => {
+function ZodiacSystemsSection() {
+  const now = new Date();
+  const ayan = calculateLahiriAyanamsa(now);
+  const deg = Math.floor(ayan);
+  const min = Math.round((ayan - deg) * 60);
   return (
-    <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonTitle className="app-title">Referência</IonTitle>
-        </IonToolbar>
-      </IonHeader>
-      <IonContent fullscreen className="reference-content">
-        <RulershipsCard />
-        <AspectsCard />
-        <ElementsCard />
-        <OppositesCard />
-        <MoonPhasesCard />
-        <LunarMansionsCard />
-        <ZodiacSystemsCard />
-        <GeneralInfoCard />
-        <div style={{ height: 80 }} />
-      </IonContent>
-    </IonPage>
+    <Section title="Zodíaco tropical e sideral" meta={`ayanamsa hoje ${deg}°${String(min).padStart(2, '0')}'`}>
+      <Defs items={[
+        ['Tropical', '0° Áries = ponto vernal (equinócio de março). Referência: equador celeste e estações.'],
+        ['Sideral', '0° Áries definido em relação às estrelas fixas. Referência: fundo estelar.'],
+        ['Precessão', 'Movimento do eixo terrestre que desloca o ponto vernal ≈ 50,3" por ano (≈ 1°23\' por século; ciclo ≈ 25.770 anos).'],
+        ['Ayanamsa', 'Diferença entre as longitudes tropical e sideral. Sideral = tropical − ayanamsa.'],
+        ['Lahiri', 'Ayanamsa padrão oficial da Índia (1955), ancorado em Spica (Chitra) a 0° Libra sideral.'],
+        ['Valor atual', `${ayan.toFixed(4)}° (${deg}°${String(min).padStart(2, '0')}') em ${now.toLocaleDateString('pt-BR')}.`],
+      ]} />
+      <Note>Fórmula usada no app: ayanamsa = 23,85° + 1,3972° × T, com T em séculos julianos desde J2000.0.</Note>
+    </Section>
   );
-};
+}
+
+const RETRO: [string, string, string][] = [
+  ['Mercury', '≈ 3 semanas', '3–4 vezes por ano'],
+  ['Venus',   '≈ 6 semanas', 'a cada ≈ 19 meses'],
+  ['Mars',    '≈ 2–2,5 meses', 'a cada ≈ 26 meses'],
+  ['Jupiter', '≈ 4 meses',   'anual'],
+  ['Saturn',  '≈ 4,5 meses', 'anual'],
+  ['Uranus',  '≈ 5 meses',   'anual'],
+  ['Neptune', '≈ 5 meses',   'anual'],
+  ['Pluto',   '≈ 5–6 meses', 'anual'],
+];
+
+function RetrogradeSection() {
+  return (
+    <Section title="Retrogradação" meta="℞">
+      <Lede>
+        Movimento aparente para oeste (longitude decrescente) visto da Terra, causado pela diferença de
+        velocidade orbital entre a Terra e o planeta. Sol e Lua não retrogradam.
+      </Lede>
+      <Table
+        head={['Planeta', 'Duração', 'Frequência']}
+        rows={RETRO.map(([p, d, f]) => [<Planet name={p} />, d, f])}
+      />
+      <Note>No app: um planeta é marcado ℞ quando sua longitude diminui entre o instante do mapa e 24 h depois.</Note>
+    </Section>
+  );
+}
+
+function PointsSection() {
+  return (
+    <Section title="Pontos, casas e decanatos" meta="definições do app">
+      <Sub>Pontos calculados</Sub>
+      <Defs items={[
+        [<Planet name="Chiron" />, 'Corpo menor (centauro) descoberto em 1977, órbita entre Saturno e Urano, período ≈ 50,4 anos. Posição aproximada por elementos orbitais (erro de alguns graus).'],
+        [<Planet name="Lilith" />, 'Apogeu médio da órbita lunar (Lua Negra média). Ciclo ≈ 8,85 anos.'],
+        [<Planet name="NorthNode" />, 'Nodo ascendente médio: interseção da órbita lunar com a eclíptica. Movimento retrógrado, ciclo ≈ 18,6 anos.'],
+        [<Planet name="SouthNode" />, 'Nodo descendente: oposto ao Nodo Norte (+180°).'],
+        [<Planet name="Vertex" />, 'Interseção da eclíptica com o primeiro vertical, no lado oeste.'],
+      ]} />
+      <Sub>Casas</Sub>
+      <Defs items={[
+        ['Sistema', 'Casas iguais: 12 casas de 30° a partir do grau do Ascendente.'],
+        ['Hemisférios', 'Acima do horizonte: casas 7–12. Abaixo: 1–6. Leste: 10–3. Oeste: 4–9.'],
+      ]} />
+      <Sub>Decanatos</Sub>
+      <Defs items={[
+        ['1º', "0°00'–9°59' do signo. Regente: o próprio signo."],
+        ['2º', "10°00'–19°59'. Regente: próximo signo do mesmo elemento."],
+        ['3º', "20°00'–29°59'. Regente: terceiro signo do mesmo elemento."],
+      ]} />
+      <Note>Atribuição de regentes por triplicidade. Existe também o sistema caldeu (faces), não usado no app.</Note>
+    </Section>
+  );
+}
+
+function TattwasSection() {
+  return (
+    <Section title="Tattwas" meta="ciclo de 120 min">
+      <Lede>Cinco elementos do sistema tântrico, em ciclo contínuo contado a partir do nascer do sol.</Lede>
+      <Table
+        head={['Ordem', 'Tattwa', 'Elemento', 'Duração']}
+        rows={[
+          ['1', 'Akasha', 'Éter', '24 min'],
+          ['2', 'Vayu', 'Ar', '24 min'],
+          ['3', 'Tejas', 'Fogo', '24 min'],
+          ['4', 'Prithvi', 'Terra', '24 min'],
+          ['5', 'Apas', 'Água', '24 min'],
+        ]}
+        numeric={[0]}
+      />
+      <Defs items={[
+        ['Ciclo', '5 × 24 min = 120 min, repetido 12 vezes por dia.'],
+        ['Sub-tattwa', 'Cada tattwa se divide em 5 sub-tattwas de 4,8 min, na mesma ordem.'],
+      ]} />
+      <Note>
+        Sequência conforme Swami Satyananda Saraswati (Tattwa Shuddhi). Outras linhagens usam
+        ordenações diferentes.
+      </Note>
+    </Section>
+  );
+}
+
+/* ════════════════ Página ════════════════ */
+
+const ReferencePage: React.FC = () => (
+  <IonPage>
+    <AppHeader title="Referência" />
+    <IonContent fullscreen className="app-content">
+      <div className="ref-list">
+        <SignsSection />
+        <DignitiesSection />
+        <AspectsSection />
+        <MoonPhasesSection />
+        <NakshatrasSection />
+        <ManazilSection />
+        <PlanetaryHoursSection />
+        <ZodiacSystemsSection />
+        <RetrogradeSection />
+        <PointsSection />
+        <TattwasSection />
+      </div>
+      <div className="app-bottom-spacer" />
+    </IonContent>
+  </IonPage>
+);
 
 export default ReferencePage;

@@ -1,26 +1,50 @@
 /* ── Layout compartilhado (mobile-first) ── */
 
 :root {
-  --as-gold: #c9a84c;
-  --as-gold-dim: rgba(201, 168, 76, 0.7);
-  --as-gold-faint: rgba(201, 168, 76, 0.12);
-  --as-border: rgba(201, 168, 76, 0.18);
+  /* Valores iniciais; o DayThemeProvider sobrescreve com a paleta do dia */
+  --as-accent: #c9a84c;
+  --as-accent-rgb: 201, 168, 76;
+  --as-on-accent: #000000;
+  --as-on-accent-rgb: 0, 0, 0;
+  --as-on-accent-shadow: none;
+  --as-bar-bg: #000000;
+  --as-bar-fg: #c9a84c;
+  --as-bar-fg-rgb: 201, 168, 76;
+  --as-bar-shadow: none;
+  --as-highlight: #c9a84c;
+  --as-highlight-rgb: 201, 168, 76;
+  --as-bg: #0a0a2e;
+  --as-bg-raised: #12123a;
+  --as-text: #ecf0f1;
+
+  /* Tokens semânticos derivados */
+  --as-gold: var(--as-highlight);
+  --as-gold-dim: rgba(var(--as-highlight-rgb), 0.75);
+  --as-gold-faint: rgba(var(--as-accent-rgb), 0.14);
+  --as-border: rgba(var(--as-accent-rgb), 0.28);
   --as-surface: rgba(255, 255, 255, 0.04);
   --as-surface-2: rgba(255, 255, 255, 0.07);
-  --as-text: #ecf0f1;
-  --as-muted: rgba(255, 255, 255, 0.5);
+  --as-muted: rgba(255, 255, 255, 0.55);
   --as-faint: rgba(255, 255, 255, 0.3);
   --as-radius: 10px;
+  --as-symbol-font: 'Segoe UI Symbol', 'Noto Sans Symbols', 'Noto Sans Symbols 2', 'Apple Symbols', 'DejaVu Sans', sans-serif;
+}
+
+body {
+  background: var(--as-bg);
+  transition: background-color 0.3s;
 }
 
 .app-content {
-  --background: #0a0a2e;
+  --background: var(--as-bg);
 }
 
 .app-title {
   font-family: Georgia, serif;
   letter-spacing: 2px;
-  color: var(--as-gold);
+  color: var(--as-bar-fg);
+  text-shadow: var(--as-bar-shadow);
+  padding-inline: 4px;
 }
 
 .app-section {
@@ -42,10 +66,14 @@
   height: 24px;
 }
 
-/* Segmented toggle (Sideral / Tropical) */
+.app-title.app-title-solo {
+  padding-inline-start: 14px;
+}
+
+/* Segmented toggle (Sideral / Tropical) — fica sobre a barra na cor principal */
 .seg-toggle {
   display: inline-flex;
-  border: 1px solid rgba(201, 168, 76, 0.4);
+  border: 1px solid rgba(var(--as-bar-fg-rgb), 0.45);
   border-radius: 8px;
   overflow: hidden;
   margin-right: 8px;
@@ -54,25 +82,53 @@
 .seg-toggle button {
   background: transparent;
   border: none;
-  color: rgba(201, 168, 76, 0.5);
+  color: rgba(var(--as-bar-fg-rgb), 0.7);
   font-family: Georgia, serif;
   font-size: 0.72rem;
   letter-spacing: 0.04em;
   padding: 6px 10px;
   cursor: pointer;
+  text-shadow: var(--as-bar-shadow);
 }
 
 .seg-toggle button + button {
-  border-left: 1px solid rgba(201, 168, 76, 0.4);
+  border-left: 1px solid rgba(var(--as-bar-fg-rgb), 0.45);
 }
 
 .seg-toggle button.active {
-  background: rgba(201, 168, 76, 0.18);
-  color: var(--as-gold);
+  background: rgba(var(--as-bar-fg-rgb), 0.2);
+  color: var(--as-bar-fg);
+  font-weight: 700;
 }
 
 .seg-toggle button:disabled {
   opacity: 0.5;
+}
+
+/* Glifo do dia planetário na barra do topo (só indicador) */
+.day-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 32px;
+  height: 32px;
+  margin-left: 8px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(var(--as-bar-fg-rgb), 0.45);
+  background: rgba(var(--as-bar-fg-rgb), 0.12);
+  color: var(--as-bar-fg);
+  text-shadow: var(--as-bar-shadow);
+}
+
+.day-badge-glyph {
+  display: block;
+  font-family: var(--as-symbol-font);
+  font-size: 18px;
+  line-height: 1;
+  height: 1em;
+  text-align: center;
 }
 
 /* Campo compacto com rótulo pequeno */
@@ -114,6 +170,41 @@
 }
 
 ion-toolbar {
-  --background: #000000;
-  --color: var(--as-gold);
+  --background: var(--as-bar-bg);
+  --color: var(--as-bar-fg);
+  --border-width: 0 0 1px;
+  --border-color: var(--as-bar-border, transparent);
+}
+
+.app-tabbar {
+  --background: var(--as-bar-bg);
+  --color: rgba(var(--as-bar-fg-rgb), 0.6);
+  --color-selected: var(--as-bar-fg);
+  --border: 1px solid var(--as-bar-border, transparent);
+}
+
+.app-tabbar ion-tab-button {
+  text-shadow: var(--as-bar-shadow);
+}
+
+.app-tabbar ion-tab-button.tab-selected {
+  font-weight: 700;
+}
+
+/* Glifos astrológicos em SVG/HTML: fonte de símbolos tradicionais */
+.astro-glyph {
+  font-family: var(--as-symbol-font);
+}
+
+/* Telas bem estreitas: título cabe ao lado do glifo do dia e do toggle */
+@media (max-width: 350px) {
+  .app-title {
+    letter-spacing: 0.5px;
+    font-size: 1.05rem;
+    padding-inline: 2px;
+  }
+
+  .seg-toggle button {
+    padding: 6px 7px;
+  }
 }

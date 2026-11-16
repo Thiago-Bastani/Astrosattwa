@@ -1,0 +1,63 @@
+.chart-panel {
+  position: relative;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 2px 0 0;
+}
+
+/* Seletor vertical no canto superior direito (vazio em todos os gráficos) */
+.chart-rail {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.chart-rail button {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(var(--as-accent-rgb), 0.1);
+  border: 1px solid rgba(var(--as-accent-rgb), 0.3);
+  color: rgba(var(--as-highlight-rgb), 0.75);
+  font-size: 1.05rem;
+  cursor: pointer;
+}
+
+.chart-rail button.active {
+  background: var(--as-accent);
+  border-color: var(--as-accent);
+  color: var(--as-on-accent);
+}
+
+/* Altura mínima ≈ quadrado, para o conteúdo abaixo não "pular" ao trocar */
+.chart-view {
+  min-height: min(100vw, 600px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Filhos ocupam a largura toda (margin:auto em flex encolheria para 300px) */
+.chart-view > * {
+  width: 100%;
+}
+
+.hours-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.hours-empty {
+  padding: 32px 16px;
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--as-muted);
+}

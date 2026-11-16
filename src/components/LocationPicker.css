@@ -15,7 +15,7 @@
 }
 
 .loc-pill:active {
-  border-color: rgba(201, 168, 76, 0.5);
+  border-color: rgba(var(--as-accent-rgb), 0.5);
 }
 
 .loc-pill-icon {
@@ -85,8 +85,8 @@
   left: 0;
   right: 0;
   z-index: 20;
-  background: #12123a;
-  border: 1px solid rgba(201, 168, 76, 0.4);
+  background: var(--as-bg-raised);
+  border: 1px solid rgba(var(--as-accent-rgb), 0.4);
   border-radius: var(--as-radius);
   max-height: 240px;
   overflow-y: auto;
@@ -112,5 +112,5 @@
 }
 
 .loc-result:active {
-  background: rgba(201, 168, 76, 0.15);
+  background: rgba(var(--as-accent-rgb), 0.15);
 }

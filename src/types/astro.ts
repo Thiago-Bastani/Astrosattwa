@@ -23,8 +23,9 @@ export interface PlanetPosition {
 }
 
 export interface LunarMansion {
-  number: number; // 1–27
-  name: string;   // nome sânscrito
+  number: number;   // 1–27 (védico) ou 1–28 (árabe)
+  name: string;     // nome sânscrito ou árabe transliterado
+  meaning?: string; // tradução (mansões árabes)
 }
 
 export interface MoonPhase {
@@ -32,7 +33,8 @@ export interface MoonPhase {
   emoji: string;
   illumination: number; // 0–100 %
   angle: number;        // 0–360 °
-  lunarMansion: LunarMansion;
+  lunarMansion: LunarMansion;  // Nakshatra (sideral Lahiri)
+  arabicMansion: LunarMansion; // Manzil (tropical)
 }
 
 export type ZodiacSystem = 'sidereal' | 'tropical';

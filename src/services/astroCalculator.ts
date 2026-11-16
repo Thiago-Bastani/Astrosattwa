@@ -1,5 +1,6 @@
 import * as Astronomy from 'astronomy-engine';
-import type { GeoLocation, ChartData, PlanetPosition, MoonPhase, LunarMansion, ZodiacSystem } from '../types/astro';
+import type { GeoLocation, ChartData, PlanetPosition, MoonPhase, ZodiacSystem } from '../types/astro';
+import { getNakshatra, getManzil } from '../utils/lunarMansions';
 import { getZodiacSign, getDecanate, getDignity, getHouseFromLongitude, getSignRuler, getRulerSignDignities, PLANET_GLYPHS } from '../utils/zodiac';
 
 const PLANET_BODIES: { name: string; body: string }[] = [
@@ -21,7 +22,7 @@ const DEG = Math.PI / 180;
  * Lahiri (Chitrapaksha) ayanamsa — padrão oficial da astrologia indiana (IAU).
  * Converte longitude tropical → sideral: sidereal = tropical - ayanamsa
  */
-function calculateLahiriAyanamsa(date: Date): number {
+export function calculateLahiriAyanamsa(date: Date): number {
   const T = dateToJulianCenturies(date);
   // 23.85° em J2000.0, precessão de ~1.3972°/século
   return 23.85 + 1.3972 * T;
@@ -145,21 +146,6 @@ function calculateVertex(date: Date, location: GeoLocation): number {
   return normalizeDeg(ascendant + 180);
 }
 
-/* ── Mansão Lunar (Nakshatras) ── */
-
-const NAKSHATRAS: string[] = [
-  'Ashwini', 'Bharani', 'Krittika', 'Rohini', 'Mrigashira', 'Ardra',
-  'Punarvasu', 'Pushya', 'Ashlesha', 'Magha', 'Purva Phalguni', 'Uttara Phalguni',
-  'Hasta', 'Chitra', 'Swati', 'Vishakha', 'Anuradha', 'Jyeshtha',
-  'Mula', 'Purva Ashadha', 'Uttara Ashadha', 'Shravana', 'Dhanishtha',
-  'Shatabhisha', 'Purva Bhadrapada', 'Uttara Bhadrapada', 'Revati',
-];
-
-function calculateLunarMansion(moonSiderealLon: number): LunarMansion {
-  const index = Math.floor(moonSiderealLon / (360 / 27)) % 27;
-  return { number: index + 1, name: NAKSHATRAS[index] };
-}
-
 /* ── Fase da Lua ── */
 
 function calculateMoonPhase(date: Date): MoonPhase {
@@ -182,10 +168,11 @@ function calculateMoonPhase(date: Date): MoonPhase {
   else                                 { name = 'Minguante';          emoji = '🌘'; }
 
   // Nakshatra sempre usa Lahiri, independente do sistema zodiacal selecionado
-  const moonSidereal = normalizeDeg(moonLon - calculateLahiriAyanamsa(date));
-  const lunarMansion = calculateLunarMansion(moonSidereal);
+  const lunarMansion = getNakshatra(moonLon - calculateLahiriAyanamsa(date));
+  // Mansões árabes: tropicais, a partir de 0° Áries
+  const arabicMansion = getManzil(moonLon);
 
-  return { name, emoji, illumination, angle, lunarMansion };
+  return { name, emoji, illumination, angle, lunarMansion, arabicMansion };
 }
 
 /* ── Chart principal ── */
