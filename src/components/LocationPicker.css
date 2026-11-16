@@ -114,3 +114,27 @@
 .loc-result:active {
   background: rgba(var(--as-accent-rgb), 0.15);
 }
+
+.loc-gps {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--as-highlight);
+  font-weight: 600;
+}
+
+.loc-gps ion-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.loc-gps:disabled {
+  opacity: 0.6;
+}
+
+.loc-gps-error {
+  padding: 8px 12px;
+  font-size: 0.74rem;
+  color: #e74c3c;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}

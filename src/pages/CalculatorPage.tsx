@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { IonContent, IonPage, IonProgressBar } from '@ionic/react';
 import type { GeoLocation, ZodiacSystem } from '../types/astro';
 import type { ConditionSet, ConditionRule, SearchResult, SearchProgress } from '../types/conditions';
@@ -11,6 +11,7 @@ import PlanetList from '../components/PlanetList';
 import LocationPicker from '../components/LocationPicker';
 import ZodiacToggle from '../components/ZodiacToggle';
 import { getPlanetaryDay } from '../utils/planetary';
+import { useDeviceLocation } from '../services/DeviceLocation';
 import './CalculatorPage.css';
 
 const WEEKDAYS = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
@@ -21,7 +22,13 @@ function uuid() {
 
 const CalculatorPage: React.FC = () => {
   // Location
-  const [location, setLocation] = useState<GeoLocation | null>(null);
+  const { device } = useDeviceLocation();
+  const [location, setLocation] = useState<GeoLocation | null>(device);
+
+  // Preenche com o GPS do aparelho se ainda não houver local escolhido
+  useEffect(() => {
+    if (device) setLocation(prev => prev ?? device);
+  }, [device]);
 
   // Conditions
   const [conditionSet, setConditionSet] = useState<ConditionSet>({

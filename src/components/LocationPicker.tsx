@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { IonIcon, IonSpinner } from '@ionic/react';
-import { closeOutline, locationOutline } from 'ionicons/icons';
+import { closeOutline, locationOutline, navigateOutline } from 'ionicons/icons';
 import type { GeoLocation, NominatimResult } from '../types/astro';
 import { searchLocation } from '../services/geocodingService';
+import { useDeviceLocation } from '../services/DeviceLocation';
 import './LocationPicker.css';
 
 interface LocationPickerProps {
@@ -25,6 +26,9 @@ const LocationPicker: React.FC<LocationPickerProps> = ({ location, onChange, pla
   const [searching, setSearching] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { locate } = useDeviceLocation();
+  const [locating, setLocating] = useState(false);
+  const [gpsError, setGpsError] = useState(false);
 
   useEffect(() => {
     if (editing) inputRef.current?.focus();
@@ -52,6 +56,20 @@ const LocationPicker: React.FC<LocationPickerProps> = ({ location, onChange, pla
     setEditing(false);
     setQuery('');
     setResults([]);
+    setGpsError(false);
+  }
+
+  async function handleUseMyLocation() {
+    setLocating(true);
+    setGpsError(false);
+    const loc = await locate();
+    setLocating(false);
+    if (loc) {
+      onChange(loc);
+      close();
+    } else {
+      setGpsError(true);
+    }
   }
 
   function select(r: NominatimResult) {
@@ -93,15 +111,22 @@ const LocationPicker: React.FC<LocationPickerProps> = ({ location, onChange, pla
           <IonIcon icon={closeOutline} />
         </button>
       </div>
-      {results.length > 0 && (
-        <div className="loc-results">
-          {results.map((r, i) => (
+      <div className="loc-results">
+        <button className="loc-result loc-gps" onClick={handleUseMyLocation} disabled={locating}>
+          <IonIcon icon={navigateOutline} />
+          <span>{locating ? 'Obtendo localização…' : 'Usar minha localização'}</span>
+        </button>
+        {gpsError && (
+          <div className="loc-gps-error">Não foi possível obter a localização. Verifique a permissão e o GPS.</div>
+        )}
+        {results.length > 0 && (
+          results.map((r, i) => (
             <button key={i} className="loc-result" onClick={() => select(r)}>
               {r.display_name}
             </button>
-          ))}
-        </div>
-      )}
+          ))
+        )}
+      </div>
     </div>
   );
 };

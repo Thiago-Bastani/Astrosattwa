@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Astrosattwa</string>
+    <string name="title_activity_main">Astrosattwa</string>
+    <string name="package_name">com.astrosattwa.app</string>
+    <string name="custom_url_scheme">com.astrosattwa.app</string>
+</resources>

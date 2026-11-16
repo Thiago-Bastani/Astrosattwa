@@ -16,6 +16,7 @@ import ReferencePage from './pages/ReferencePage';
 import CalculatorPage from './pages/CalculatorPage';
 import { DayThemeProvider } from './theme/DayTheme';
 import ThemeRouteSync from './theme/ThemeRouteSync';
+import { DeviceLocationProvider } from './services/DeviceLocation';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -43,6 +44,7 @@ setupIonicReact();
 
 const App: React.FC = () => (
   <IonApp>
+    <DeviceLocationProvider>
     <DayThemeProvider>
     <IonReactRouter>
       <ThemeRouteSync />
@@ -70,6 +72,7 @@ const App: React.FC = () => (
       </IonTabs>
     </IonReactRouter>
     </DayThemeProvider>
+    </DeviceLocationProvider>
   </IonApp>
 );
 

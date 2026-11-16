@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { IonContent, IonPage } from '@ionic/react';
 import AppHeader from '../components/AppHeader';
 import BirthDataForm from '../components/BirthDataForm';
@@ -10,6 +10,7 @@ import { calculateChart } from '../services/astroCalculator';
 import { getCurrentTattwa } from '../utils/tattwa';
 import { getPlanetaryDay } from '../utils/planetary';
 import { useDayTheme } from '../theme/DayTheme';
+import { useDeviceLocation } from '../services/DeviceLocation';
 import type { GeoLocation, ZodiacSystem } from '../types/astro';
 
 const BELO_HORIZONTE: GeoLocation = {
@@ -20,7 +21,19 @@ const BELO_HORIZONTE: GeoLocation = {
 
 const MandalaPage: React.FC = () => {
   const [date, setDate] = useState<Date>(new Date());
-  const [location, setLocation] = useState<GeoLocation>(BELO_HORIZONTE);
+  const { device } = useDeviceLocation();
+  const [location, setLocationState] = useState<GeoLocation>(() => device ?? BELO_HORIZONTE);
+  const pickedManually = useRef(false);
+
+  const setLocation = (loc: GeoLocation) => {
+    pickedManually.current = true;
+    setLocationState(loc);
+  };
+
+  // Segue o GPS do aparelho até o usuário escolher outro local nesta sessão
+  useEffect(() => {
+    if (device && !pickedManually.current) setLocationState(device);
+  }, [device]);
   const [zodiacSystem, setZodiacSystem] = useState<ZodiacSystem>('sidereal');
   const { setReference } = useDayTheme();
 
