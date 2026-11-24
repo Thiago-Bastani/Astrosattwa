@@ -7,6 +7,7 @@ import { CHALDEAN_ORDER, DAY_RULERS, WEEKDAY_NAMES_PT } from '../utils/planetary
 import { DAY_PALETTES } from '../theme/palettes';
 import { calculateLahiriAyanamsa } from '../services/astroCalculator';
 import AppHeader from '../components/AppHeader';
+import { VedicHouseKey } from '../components/VedicChart';
 import './ReferencePage.css';
 
 /* ════════════════ Blocos de layout ════════════════ */
@@ -295,7 +296,7 @@ function NakshatrasSection() {
   return (
     <Section title="Nakshatras" meta="27 · 13°20' cada">
       <Lede>
-        Divisão védica da eclíptica sideral em 27 partes iguais de 13°20', a partir de 0° Áries sideral.
+        Divisão védica da eclíptica em 27 partes iguais de 13°20', a partir de 0° Áries (tradicionalmente sideral).
         Cada nakshatra se divide em 4 padas de 3°20'.
       </Lede>
       <Table
@@ -324,7 +325,7 @@ function NakshatrasSection() {
         ])}
         numeric={[1]}
       />
-      <Note>No app, o nakshatra é calculado com ayanamsa Lahiri, independente do sistema zodiacal selecionado.</Note>
+      <Note>No app, o nakshatra segue o sistema zodiacal selecionado: sideral (ayanamsa Lahiri, o padrão védico) ou tropical.</Note>
     </Section>
   );
 }
@@ -338,11 +339,26 @@ function ManazilSection() {
         Lua. Origem na astronomia árabe; registrada no Picatrix e em Agrippa.
       </Lede>
       <Table
-        head={['#', 'Manzil', 'Tradução', 'Início']}
-        rows={MANAZIL.map((m, i) => [i + 1, <span className="ref-hl">{m.name}</span>, m.meaning, <Lon deg={i * span} />])}
+        head={['#', 'Manzil', 'Tradução', 'Início', 'Nakshatra']}
+        rows={MANAZIL.map((m, i) => [
+          i + 1,
+          <span className="ref-hl">{m.name}</span>,
+          m.meaning,
+          <Lon deg={i * span} />,
+          m.nakshatra === null
+            ? <span className="ref-muted">—</span>
+            : <span className={m.approx ? 'ref-muted' : ''}>{m.approx ? '≈ ' : ''}{NAKSHATRAS[m.nakshatra]}</span>,
+        ])}
         numeric={[0]}
       />
-      <Note>No app, as manazil são medidas no zodíaco tropical a partir de 0° Áries, independente do sistema selecionado.</Note>
+      <Note>
+        Nakshatra correspondente: o que é marcado pelas mesmas estrelas. Com ≈, as estrelas são vizinhas, não as
+        mesmas. Sa'd al-Su'ud não tem par: são 28 manazil para 27 nakshatras.
+      </Note>
+      <Sub>Uso eletivo</Sub>
+      <Lede>Para que cada mansão serve quando a Lua passa por ela, segundo Agrippa (De Occulta Philosophia, II, 33).</Lede>
+      <Defs items={MANAZIL.map((m, i) => [`${i + 1}. ${m.name}`, m.election])} />
+      <Note>No app, as manazil seguem o sistema zodiacal selecionado: tropical (como tabeladas no Picatrix e em Agrippa) ou sideral (Lahiri, mais próximo das estrelas que dão nome às mansões).</Note>
     </Section>
   );
 }
@@ -490,6 +506,70 @@ function TattwasSection() {
 
 /* ════════════════ Página ════════════════ */
 
+/* ── Mapa védico ── */
+
+const GRAHA_KEY: [string, string, string][] = [
+  ['Su', 'Sun', 'Surya'], ['Mo', 'Moon', 'Chandra'], ['Ma', 'Mars', 'Mangala'],
+  ['Me', 'Mercury', 'Budha'], ['Ju', 'Jupiter', 'Guru'], ['Ve', 'Venus', 'Shukra'],
+  ['Sa', 'Saturn', 'Shani'], ['Ra', 'NorthNode', 'Rahu'], ['Ke', 'SouthNode', 'Ketu'],
+];
+
+const BHAVAS: [string, string][] = [
+  ['Tanu', 'Corpo, aparência, vitalidade, o eu'],
+  ['Dhana', 'Recursos, família, fala, alimentação'],
+  ['Sahaja', 'Irmãos, coragem, esforço, comunicação'],
+  ['Sukha', 'Mãe, lar, terras, paz interior'],
+  ['Putra', 'Filhos, criatividade, inteligência, mantras'],
+  ['Ripu', 'Inimigos, doenças, dívidas, serviço'],
+  ['Kalatra', 'Cônjuge, parcerias, contratos'],
+  ['Ayu', 'Longevidade, crises, ocultismo, heranças'],
+  ['Dharma', 'Sorte, pai, mestre, religião, viagens longas'],
+  ['Karma', 'Carreira, ação no mundo, status'],
+  ['Labha', 'Ganhos, desejos realizados, amigos'],
+  ['Vyaya', 'Perdas, gastos, isolamento, libertação (moksha)'],
+];
+
+function VedicChartSection() {
+  return (
+    <Section title="Mapa védico" meta="estilo norte-indiano">
+      <Lede>
+        No estilo norte-indiano as casas são fixas no desenho e os signos giram. A casa 1 é sempre o losango
+        de cima; as demais seguem no sentido anti-horário.
+      </Lede>
+      <VedicHouseKey />
+      <Defs items={[
+        ['Números', 'Cada número é um signo, não uma casa: 1 = Áries, 2 = Touro … 12 = Peixes. Fica junto ao vértice interno de cada casa.'],
+        ['Lagna', 'O signo do Ascendente, que ocupa a casa 1 (destacada, com ASC e o grau).'],
+        ['Casas', 'Signo inteiro: cada casa é um signo completo a partir do Lagna. Não há cúspides intermediárias.'],
+        ['Planetas', 'Abreviação + grau dentro do signo. "R" indica retrógrado.'],
+        ['Zodíaco', 'Segue o sistema escolhido no topo da tela; o tradicional védico é o sideral (Lahiri).'],
+      ]} />
+      <Sub>Grahas</Sub>
+      <Table
+        head={['Sigla', 'Planeta', 'Sânscrito']}
+        rows={GRAHA_KEY.map(([abbr, name, skt]) => [<span className="ref-hl">{abbr}</span>, <Planet name={name} />, skt])}
+      />
+      <Note>Rahu e Ketu são os nodos lunares (Norte e Sul). Urano, Netuno e Plutão não entram no mapa védico tradicional.</Note>
+      <Sub>Bhavas (casas)</Sub>
+      <Table
+        head={['Casa', 'Nome', 'Temas']}
+        rows={BHAVAS.map(([name, themes], i) => [i + 1, <span className="ref-hl">{name}</span>, themes])}
+        numeric={[0]}
+      />
+      <Defs items={[
+        ['Kendras', 'Casas 1, 4, 7, 10: pilares do mapa; planetas aqui ganham força.'],
+        ['Trikonas', 'Casas 1, 5, 9: casas de sorte e dharma; as mais auspiciosas.'],
+        ['Dusthanas', 'Casas 6, 8, 12: casas difíceis, de obstáculos e perdas.'],
+        ['Upachayas', 'Casas 3, 6, 10, 11: melhoram com o tempo; boas para maléficos.'],
+      ]} />
+      <Note>
+        Leitura rápida: veja o signo do Lagna e onde está seu regente, depois a Lua (casa e nakshatra) e os
+        planetas em kendras e trikonas.
+      </Note>
+    </Section>
+  );
+}
+
 const ReferencePage: React.FC = () => (
   <IonPage>
     <AppHeader title="Referência" />
@@ -506,6 +586,7 @@ const ReferencePage: React.FC = () => (
         <RetrogradeSection />
         <PointsSection />
         <TattwasSection />
+        <VedicChartSection />
       </div>
       <div className="app-bottom-spacer" />
     </IonContent>

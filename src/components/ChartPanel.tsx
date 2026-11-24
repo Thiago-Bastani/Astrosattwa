@@ -1,10 +1,11 @@
-import React from 'react';
-import { IonIcon } from '@ionic/react';
-import { apertureOutline, gridOutline, timeOutline } from 'ionicons/icons';
-import type { ChartData } from '../types/astro';
+import React, { useState } from 'react';
+import { IonIcon, IonSpinner } from '@ionic/react';
+import { apertureOutline, diamondOutline, documentTextOutline, gridOutline, timeOutline } from 'ionicons/icons';
+import type { ChartData, GeoLocation } from '../types/astro';
 import type { PlanetaryDay } from '../utils/planetary';
 import { usePersistentState } from '../utils/usePersistentState';
 import MandalaChart from './MandalaChart';
+import VedicChart from './VedicChart';
 import AspectGrid from './AspectGrid';
 import PlanetaryHoursChart from './PlanetaryHoursChart';
 import './ChartPanel.css';
@@ -13,6 +14,7 @@ interface ChartPanelProps {
   chart: ChartData;
   date: Date;
   planetaryDay: PlanetaryDay | null;
+  location: GeoLocation;
   /** Chave para lembrar o gráfico escolhido (cada tela pode ter o seu). */
   storageKey: string;
 }
@@ -23,18 +25,46 @@ interface ChartPanelProps {
  */
 const VIEWS = [
   { id: 'mandala', label: 'Mandala', icon: apertureOutline },
+  { id: 'vedic',   label: 'Mapa védico', icon: diamondOutline },
   { id: 'aspects', label: 'Aspectos', icon: gridOutline },
   { id: 'hours',   label: 'Horas planetárias', icon: timeOutline },
 ] as const;
 
 type ViewId = typeof VIEWS[number]['id'];
 
-const ChartPanel: React.FC<ChartPanelProps> = ({ chart, date, planetaryDay, storageKey }) => {
+const ChartPanel: React.FC<ChartPanelProps> = ({ chart, date, planetaryDay, location, storageKey }) => {
   const [view, setView] = usePersistentState<ViewId>(storageKey, 'mandala');
   const active = VIEWS.some(v => v.id === view) ? view : 'mandala';
+  const [exporting, setExporting] = useState(false);
+
+  // O PDF é montado a partir dos dados (não da tela); o módulo só carrega ao tocar
+  const handleExport = async () => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const { exportReport } = await import('../services/pdf/pdfReport');
+      await exportReport({ chart, date, location, planetaryDay });
+    } catch (err) {
+      console.error('[PDF]', err);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
-    <div className="chart-panel">
+    <div className={`chart-panel chart-panel-${active}`}>
+      <div className="chart-rail chart-rail-left">
+        <button
+          aria-label="Gerar PDF"
+          title="Gerar PDF"
+          onClick={handleExport}
+          disabled={exporting}
+          aria-busy={exporting}
+        >
+          {exporting ? <IonSpinner name="crescent" /> : <IonIcon icon={documentTextOutline} />}
+        </button>
+      </div>
+
       <div className="chart-rail" role="tablist" aria-label="Gráfico">
         {VIEWS.map(v => (
           <button
@@ -53,6 +83,7 @@ const ChartPanel: React.FC<ChartPanelProps> = ({ chart, date, planetaryDay, stor
 
       <div className="chart-view">
         {active === 'mandala' && <MandalaChart data={chart} />}
+        {active === 'vedic' && <VedicChart data={chart} />}
         {active === 'aspects' && <AspectGrid planets={chart.planets} />}
         {active === 'hours' && <PlanetaryHoursChart day={planetaryDay} date={date} />}
       </div>

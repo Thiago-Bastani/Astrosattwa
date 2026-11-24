@@ -148,7 +148,8 @@ function calculateVertex(date: Date, location: GeoLocation): number {
 
 /* ── Fase da Lua ── */
 
-function calculateMoonPhase(date: Date): MoonPhase {
+/** `ayanamsa` = 0 no tropical; Lahiri no sideral. As mansões seguem o zodíaco do mapa. */
+function calculateMoonPhase(date: Date, ayanamsa: number): MoonPhase {
   // Diferença Sol/Lua é igual em qualquer sistema (ayanamsa cancela)
   const sunLon  = getPlanetLongitude('Sun', date);
   const moonLon = getPlanetLongitude('Moon', date);
@@ -167,10 +168,10 @@ function calculateMoonPhase(date: Date): MoonPhase {
   else if (angle < 292.5)              { name = 'Quarto Minguante';   emoji = '🌗'; }
   else                                 { name = 'Minguante';          emoji = '🌘'; }
 
-  // Nakshatra sempre usa Lahiri, independente do sistema zodiacal selecionado
-  const lunarMansion = getNakshatra(moonLon - calculateLahiriAyanamsa(date));
-  // Mansões árabes: tropicais, a partir de 0° Áries
-  const arabicMansion = getManzil(moonLon);
+  // Nakshatras e manazil: divisões iguais a partir de 0° Áries do zodíaco selecionado
+  const mansionLon = normalizeDeg(moonLon - ayanamsa);
+  const lunarMansion = getNakshatra(mansionLon);
+  const arabicMansion = getManzil(mansionLon);
 
   return { name, emoji, illumination, angle, lunarMansion, arabicMansion };
 }
@@ -257,7 +258,7 @@ export function calculateChart(
     });
   }
 
-  const moonPhase = calculateMoonPhase(date);
+  const moonPhase = calculateMoonPhase(date, ayanamsa);
 
   return { planets, houseCusps, ascendant, mc, descendant, ic, moonPhase, zodiacSystem };
 }

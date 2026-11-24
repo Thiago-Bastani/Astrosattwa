@@ -11,6 +11,8 @@ import { getCurrentTattwa } from '../utils/tattwa';
 import { getPlanetaryDay } from '../utils/planetary';
 import { useDayTheme } from '../theme/DayTheme';
 import { useDeviceLocation } from '../services/DeviceLocation';
+import { usePersistentState } from '../utils/usePersistentState';
+import { DEFAULT_ZODIAC_SYSTEM, ZODIAC_SYSTEM_KEY } from '../utils/zodiacPreference';
 import type { GeoLocation, ZodiacSystem } from '../types/astro';
 
 const BELO_HORIZONTE: GeoLocation = {
@@ -34,7 +36,7 @@ const MandalaPage: React.FC = () => {
   useEffect(() => {
     if (device && !pickedManually.current) setLocationState(device);
   }, [device]);
-  const [zodiacSystem, setZodiacSystem] = useState<ZodiacSystem>('sidereal');
+  const [zodiacSystem, setZodiacSystem] = usePersistentState<ZodiacSystem>(ZODIAC_SYSTEM_KEY, DEFAULT_ZODIAC_SYSTEM);
   const { setReference } = useDayTheme();
 
   // A paleta do app segue o dia planetário da data/local do mapa
@@ -61,7 +63,7 @@ const MandalaPage: React.FC = () => {
           <SkyStatus tattwa={tattwa} moonPhase={chartData.moonPhase} planetaryDay={planetaryDay} />
         </div>
 
-        <ChartPanel chart={chartData} date={date} planetaryDay={planetaryDay} storageKey="as.chartView.mapa" />
+        <ChartPanel chart={chartData} date={date} planetaryDay={planetaryDay} location={location} storageKey="as.chartView.mapa" />
 
         <div className="app-section">
           <div className="section-title">Posições</div>

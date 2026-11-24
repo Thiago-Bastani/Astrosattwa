@@ -12,7 +12,11 @@ import LocationPicker from '../components/LocationPicker';
 import ZodiacToggle from '../components/ZodiacToggle';
 import { getPlanetaryDay } from '../utils/planetary';
 import { useDeviceLocation } from '../services/DeviceLocation';
+import { usePersistentState } from '../utils/usePersistentState';
+import { CALC_ZODIAC_SYSTEM_KEY, DEFAULT_ZODIAC_SYSTEM } from '../utils/zodiacPreference';
 import './CalculatorPage.css';
+
+const FALLBACK_LOCATION: GeoLocation = { lat: -19.9167, lon: -43.9345, name: 'Belo Horizonte, Brasil' };
 
 const WEEKDAYS = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
 
@@ -43,7 +47,7 @@ const CalculatorPage: React.FC = () => {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   });
   const [maxDays, setMaxDays] = useState(365);
-  const [zodiacSystem, setZodiacSystem] = useState<ZodiacSystem>('sidereal');
+  const [zodiacSystem, setZodiacSystem] = usePersistentState<ZodiacSystem>(CALC_ZODIAC_SYSTEM_KEY, DEFAULT_ZODIAC_SYSTEM);
   const [isSearching, setIsSearching] = useState(false);
   const [progress, setProgress] = useState<SearchProgress | null>(null);
   const [result, setResult] = useState<SearchResult | null>(null);
@@ -272,6 +276,7 @@ const CalculatorPage: React.FC = () => {
               chart={result.chart}
               date={result.date}
               planetaryDay={resultPlanetaryDay}
+              location={location ?? device ?? FALLBACK_LOCATION}
               storageKey="as.chartView.calc"
             />
             <div className="app-section">

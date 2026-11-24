@@ -1,0 +1,29 @@
+/* Quadrado com folga dos dois lados: o canto superior direito fica livre para o seletor de gráficos */
+.vedic-chart-container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 8px 48px 4px;
+  box-sizing: border-box;
+}
+
+.vedic-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 0 24px rgba(var(--as-accent-rgb), 0.2));
+}
+
+.vedic-caption {
+  margin-top: 8px;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--as-muted);
+}
+
+.vedic-key {
+  display: block;
+  width: 100%;
+  max-width: 220px;
+  height: auto;
+  margin: 8px auto 12px;
+}

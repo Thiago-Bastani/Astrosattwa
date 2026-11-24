@@ -33,8 +33,8 @@ export interface MoonPhase {
   emoji: string;
   illumination: number; // 0–100 %
   angle: number;        // 0–360 °
-  lunarMansion: LunarMansion;  // Nakshatra (sideral Lahiri)
-  arabicMansion: LunarMansion; // Manzil (tropical)
+  lunarMansion: LunarMansion;  // Nakshatra (no zodíaco do mapa)
+  arabicMansion: LunarMansion; // Manzil (no zodíaco do mapa)
 }
 
 export type ZodiacSystem = 'sidereal' | 'tropical';

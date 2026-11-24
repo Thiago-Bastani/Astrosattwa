@@ -30,6 +30,26 @@
   cursor: pointer;
 }
 
+.chart-rail-left {
+  right: auto;
+  left: 8px;
+}
+
+.chart-rail button:disabled {
+  cursor: progress;
+}
+
+.chart-rail ion-spinner {
+  width: 16px;
+  height: 16px;
+  color: inherit;
+}
+
+/* A grade de aspectos começa no canto superior esquerdo: desce para liberar o botão de PDF */
+.chart-panel-aspects .chart-view {
+  padding-top: 42px;
+}
+
 .chart-rail button.active {
   background: var(--as-accent);
   border-color: var(--as-accent);
