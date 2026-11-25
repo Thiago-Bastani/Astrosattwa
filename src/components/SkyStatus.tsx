@@ -7,6 +7,7 @@ import { PLANET_COLORS, PLANET_GLYPHS } from '../utils/zodiac';
 import { PLANET_NAMES_PT } from '../utils/astroLabels';
 import { usePersistentState } from '../utils/usePersistentState';
 import { TattwaShape } from './TattwaShape';
+import NakshatraSymbol from './NakshatraSymbol';
 import './SkyStatus.css';
 
 interface SkyStatusProps {
@@ -86,6 +87,11 @@ const SkyStatus: React.FC<SkyStatusProps> = ({ tattwa, moonPhase, planetaryDay }
       <Tile
         label={<>{isVedic ? 'Nakshatra' : 'Manzil'} <span className="sky-swap">⇄</span></>}
         meta={`${mansion.number}ª`}
+        icon={isVedic ? (
+          <span className="sky-nakshatra">
+            <NakshatraSymbol index={mansion.number - 1} color="currentColor" bg="transparent" ring="currentColor" size={22} />
+          </span>
+        ) : undefined}
         value={mansion.name}
         extra={mansion.meaning}
         onClick={() => setMansionSystem(isVedic ? 'arabic' : 'vedic')}

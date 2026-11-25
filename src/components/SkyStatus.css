@@ -103,3 +103,9 @@
 .sky-tattwa-shape svg {
   display: block;
 }
+
+/* Símbolo do nakshatra ao lado do nome */
+.sky-nakshatra {
+  display: flex;
+  color: var(--as-highlight);
+}

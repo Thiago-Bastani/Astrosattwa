@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { IonIcon, IonSpinner } from '@ionic/react';
+import { IonIcon, IonSpinner, useIonAlert } from '@ionic/react';
 import { apertureOutline, diamondOutline, documentTextOutline, gridOutline, listOutline, timeOutline } from 'ionicons/icons';
 import type { ChartData, GeoLocation } from '../types/astro';
 import type { PlanetaryDay } from '../utils/planetary';
@@ -33,24 +33,48 @@ const VIEWS = [
 
 type ViewId = typeof VIEWS[number]['id'];
 
+const PDF_NAME_KEY = 'astrosattwa.pdfName';
+
 const ChartPanel: React.FC<ChartPanelProps> = ({ chart, date, planetaryDay, location, storageKey }) => {
   const [view, setView] = usePersistentState<ViewId>(storageKey, 'mandala');
   const active = VIEWS.some(v => v.id === view) ? view : 'mandala';
   const [exporting, setExporting] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [presentAlert] = useIonAlert();
 
   // O PDF é montado a partir dos dados (não da tela); o módulo só carrega ao tocar
-  const handleExport = async () => {
+  const generate = async (name: string) => {
     if (exporting) return;
     setExporting(true);
     try {
       const { exportReport } = await import('../services/pdf/pdfReport');
-      await exportReport({ chart, date, location, planetaryDay });
+      await exportReport({ chart, date, location, planetaryDay, name: name || undefined });
     } catch (err) {
       console.error('[PDF]', err);
     } finally {
       setExporting(false);
     }
+  };
+
+  // Nome opcional para a capa (mapas natais); lembra o último usado
+  const handleExport = () => {
+    if (exporting) return;
+    presentAlert({
+      header: 'Gerar PDF',
+      message: 'Nome para a capa (opcional, para mapas natais).',
+      inputs: [{ name: 'name', type: 'text', placeholder: 'Nome', value: localStorage.getItem(PDF_NAME_KEY) ?? '' }],
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        {
+          text: 'Gerar',
+          handler: (values: { name?: string }) => {
+            const name = (values?.name ?? '').trim();
+            localStorage.setItem(PDF_NAME_KEY, name);
+            void generate(name);
+          },
+        },
+      ],
+    });
   };
 
   return (

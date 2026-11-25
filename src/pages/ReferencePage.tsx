@@ -2,7 +2,7 @@ import React from 'react';
 import { IonContent, IonPage } from '@ionic/react';
 import { ZODIAC_SIGNS, PLANET_GLYPHS, PLANET_COLORS, DIGNITY_TABLE, SIGN_RULERS } from '../utils/zodiac';
 import { PLANET_NAMES_PT, SIGN_NAMES_PT, MODALITY_MAP } from '../utils/astroLabels';
-import { MANAZIL, NAKSHATRAS } from '../utils/lunarMansions';
+import { MANAZIL, NAKSHATRAS, NAKSHATRA_DATA } from '../utils/lunarMansions';
 import { CHALDEAN_ORDER, DAY_RULERS, WEEKDAY_NAMES_PT } from '../utils/planetary';
 import { DAY_PALETTES } from '../theme/palettes';
 import { calculateLahiriAyanamsa } from '../services/astroCalculator';
@@ -255,36 +255,6 @@ function MoonPhasesSection() {
     </Section>
   );
 }
-
-const NAKSHATRA_DATA: { lord: string; devata: string; symbol: string; gana: string }[] = [
-  { lord: 'Ketu',     devata: 'Ashwins',      symbol: 'Cabeça de cavalo',      gana: 'Deva' },
-  { lord: 'Vênus',    devata: 'Yama',         symbol: 'Yoni',                  gana: 'Manushya' },
-  { lord: 'Sol',      devata: 'Agni',         symbol: 'Lâmina',                gana: 'Rakshasa' },
-  { lord: 'Lua',      devata: 'Brahma',       symbol: 'Carroça',               gana: 'Manushya' },
-  { lord: 'Marte',    devata: 'Soma',         symbol: 'Cabeça de cervo',       gana: 'Deva' },
-  { lord: 'Rahu',     devata: 'Rudra',        symbol: 'Lágrima',               gana: 'Manushya' },
-  { lord: 'Júpiter',  devata: 'Aditi',        symbol: 'Aljava',                gana: 'Deva' },
-  { lord: 'Saturno',  devata: 'Brihaspati',   symbol: 'Flor',                  gana: 'Deva' },
-  { lord: 'Mercúrio', devata: 'Nagas',        symbol: 'Serpente enrolada',     gana: 'Rakshasa' },
-  { lord: 'Ketu',     devata: 'Pitrs',        symbol: 'Trono',                 gana: 'Rakshasa' },
-  { lord: 'Vênus',    devata: 'Bhaga',        symbol: 'Pés da cama',           gana: 'Manushya' },
-  { lord: 'Sol',      devata: 'Aryaman',      symbol: 'Cabeceira da cama',     gana: 'Manushya' },
-  { lord: 'Lua',      devata: 'Savitar',      symbol: 'Mão',                   gana: 'Deva' },
-  { lord: 'Marte',    devata: 'Vishvakarma',  symbol: 'Pérola',                gana: 'Rakshasa' },
-  { lord: 'Rahu',     devata: 'Vayu',         symbol: 'Broto',                 gana: 'Deva' },
-  { lord: 'Júpiter',  devata: 'Indra-Agni',   symbol: 'Arco triunfal',         gana: 'Rakshasa' },
-  { lord: 'Saturno',  devata: 'Mitra',        symbol: 'Lótus',                 gana: 'Deva' },
-  { lord: 'Mercúrio', devata: 'Indra',        symbol: 'Brinco',                gana: 'Rakshasa' },
-  { lord: 'Ketu',     devata: 'Nirrti',       symbol: 'Raízes atadas',         gana: 'Rakshasa' },
-  { lord: 'Vênus',    devata: 'Apah',         symbol: 'Leque',                 gana: 'Manushya' },
-  { lord: 'Sol',      devata: 'Vishvedevas',  symbol: 'Presa de elefante',     gana: 'Manushya' },
-  { lord: 'Lua',      devata: 'Vishnu',       symbol: 'Três pegadas',          gana: 'Deva' },
-  { lord: 'Marte',    devata: 'Vasus',        symbol: 'Tambor',                gana: 'Rakshasa' },
-  { lord: 'Rahu',     devata: 'Varuna',       symbol: 'Círculo vazio',         gana: 'Rakshasa' },
-  { lord: 'Júpiter',  devata: 'Aja Ekapada',  symbol: 'Pés do esquife',        gana: 'Manushya' },
-  { lord: 'Saturno',  devata: 'Ahir Budhnya', symbol: 'Serpente',              gana: 'Manushya' },
-  { lord: 'Mercúrio', devata: 'Pushan',       symbol: 'Peixe',                 gana: 'Deva' },
-];
 
 const DASHA: [string, number][] = [
   ['Ketu', 7], ['Vênus', 20], ['Sol', 6], ['Lua', 10], ['Marte', 7],

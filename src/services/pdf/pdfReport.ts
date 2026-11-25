@@ -19,11 +19,17 @@ import MandalaChart from '../../components/MandalaChart';
 import VedicChart from '../../components/VedicChart';
 import AspectGrid from '../../components/AspectGrid';
 import PlanetaryHoursChart from '../../components/PlanetaryHoursChart';
+import NakshatraSymbol from '../../components/NakshatraSymbol';
+import { NAKSHATRAS, NAKSHATRA_DATA } from '../../utils/lunarMansions';
+import {
+  BHAVA_TEXT, DASHA_YEARS, GANA_TEXT, GRAHA_INFO, GRAHA_NAMES, HOUSE_GROUPS, HOUSE_TYPE_TEXT, LAGNA_TEXT, NAKSHATRA_INFO, NATURE_TEXT, SIGN_INFO, VEDIC_RULERS,
+  dignityText, grahaDignity, grahasInHouse, houseSignIndex, nakshatraPada, nakshatraSpan, padaNavamsha, wholeSignHouse,
+} from '../../utils/vedicReading';
 import { registerFonts, setRunFont, splitRuns } from './pdfFonts';
 import { chartToSvg } from './pdfSvg';
 
 /**
- * Relatório em PDF (A4: mapa, aspectos e leitura breve natal) montado só a partir dos dados do mapa:
+ * Relatório em PDF (A4): capa, leitura védica e leitura ocidental montado só a partir dos dados do mapa:
  * mesmo conteúdo e mesmo layout em qualquer aparelho, independente da tela.
  */
 
@@ -32,6 +38,8 @@ export interface ReportInput {
   date: Date;
   location: GeoLocation;
   planetaryDay: PlanetaryDay | null;
+  /** Nome para a capa (opcional, para mapas natais) */
+  name?: string;
 }
 
 const W = 210;
@@ -213,19 +221,23 @@ function card(doc: jsPDF, t: Theme, x: number, y: number, w: number, h: number, 
   }
 }
 
-function footer(doc: jsPDF, t: Theme, input: ReportInput, page: number, pages: number): void {
+type Part = 'cover' | 'vedic' | 'western';
+
+function footer(doc: jsPDF, t: Theme, input: ReportInput, page: number, pages: number, part: Part): void {
+  if (part === 'cover') return;
   const sys = input.chart.zodiacSystem === 'sidereal'
     ? `zodíaco sideral · ayanamsa Lahiri ${calculateLahiriAyanamsa(input.date).toFixed(2)}°`
     : 'zodíaco tropical';
   doc.setDrawColor(t.line);
   doc.setLineWidth(0.2);
   doc.line(M, H - 11, W - M, H - 11);
-  rich(doc, `Astrosattwa · ${sys} · casas por signo inteiro`, M, H - 7, { size: 7, color: t.faint });
+  const houses = part === 'vedic' ? 'leitura védica · casas por signo inteiro' : 'leitura ocidental · casas iguais a partir do ASC';
+  rich(doc, `Astrosattwa · ${sys} · ${houses}`, M, H - 7, { size: 7, color: t.faint });
   rich(doc, `Paleta do dia: ${t.paletteName} · ${page}/${pages}`, W - M, H - 7, { size: 7, color: t.faint, align: 'right' });
 }
 
 /** Faixa do topo nas cores do dia; a linha fina embaixo tem a cor do planeta da hora. */
-function header(doc: jsPDF, t: Theme, input: ReportInput, compact: boolean): number {
+function header(doc: jsPDF, t: Theme, input: ReportInput, compact: boolean, kicker = 'MAPA DO CÉU'): number {
   const h = compact ? 14 : 30;
   doc.setFillColor(t.accent);
   doc.rect(0, 0, W, h, 'F');
@@ -235,12 +247,13 @@ function header(doc: jsPDF, t: Theme, input: ReportInput, compact: boolean): num
   const when = `${ddmmyyyy(input.date)} · ${hhmm(input.date)}`;
   if (compact) {
     rich(doc, 'Astrosattwa', M, 9, { size: 13, color: t.onAccent, bold: true });
-    rich(doc, `${when} · ${input.location.name}`, W - M, 9, { size: 8.5, color: t.onAccent, align: 'right' });
+    const who = input.name ? `${input.name} · ` : '';
+    rich(doc, fit(doc, `${who}${when} · ${input.location.name}`, 140, 8.5), W - M, 9, { size: 8.5, color: t.onAccent, align: 'right' });
     return h + 1.2;
   }
 
   rich(doc, 'Astrosattwa', M, 13, { size: 22, color: t.onAccent, bold: true });
-  rich(doc, 'MAPA DO CÉU', M, 21, { size: 8, color: t.onAccent, spacing: 0.8 });
+  rich(doc, kicker, M, 21, { size: 8, color: t.onAccent, spacing: 0.8 });
   rich(doc, when, W - M, 12.5, { size: 15, color: t.onAccent, bold: true, align: 'right' });
   const place = fit(doc, input.location.name, 110, 9);
   rich(doc, place, W - M, 19, { size: 9, color: t.onAccent, align: 'right' });
@@ -311,13 +324,12 @@ function statusCards(doc: jsPDF, t: Theme, input: ReportInput, y: number): numbe
       },
     },
     {
-      label: 'Mansões lunares',
+      label: 'Manzil',
       draw: x => {
-        const n = moonPhase.lunarMansion, z = moonPhase.arabicMansion;
-        rich(doc, `${n.number}ª`, x, y + 13, { size: 7.5, color: t.faint });
-        rich(doc, fit(doc, n.name, w - 14, 10.5, true), x + 5.5, y + 13, { size: 10.5, color: t.text, bold: true });
-        rich(doc, `${z.number}ª`, x, y + 19.5, { size: 7.5, color: t.faint });
-        rich(doc, fit(doc, `${z.name}${z.meaning ? ` · ${z.meaning}` : ''}`, w - 14, 8), x + 5.5, y + 19.5, { size: 8, color: t.muted });
+        const z = moonPhase.arabicMansion;
+        rich(doc, `${z.number}ª`, x, y + 14, { size: 7.5, color: t.faint });
+        rich(doc, fit(doc, z.name, w - 14, 10.5, true), x + 5.5, y + 14, { size: 10.5, color: t.text, bold: true });
+        rich(doc, fit(doc, z.meaning ?? '', w - 8, 7.5), x, y + 19.5, { size: 7.5, color: t.muted });
       },
     },
     {
@@ -513,6 +525,8 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 interface Seg { text: string; color: string; bold?: boolean }
 
+const BOLD_SLACK = 0.45;
+
 /**
  * Texto corrido com trechos de estilos diferentes, quebrando por palavra.
  * Com draw = false só mede. Devolve o y da linha seguinte.
@@ -535,7 +549,8 @@ function flow(doc: jsPDF, segs: Seg[], x: number, y: number, w: number, size: nu
       lineStart = true;
     }
     if (draw && !isSpace) rich(doc, wd.text, cx, cy, { size, color: wd.color, bold: wd.bold });
-    cx += ww;
+    // O negrito do leitor costuma sair um pouco mais largo que a métrica do jsPDF
+    cx += ww + (wd.bold && !isSpace ? BOLD_SLACK : 0);
     lineStart = false;
   }
   return cy + lh;
@@ -702,27 +717,420 @@ function briefReading(doc: jsPDF, t: Theme, input: ReportInput): void {
   }
 }
 
+/* ── Capa ── */
+
+async function coverPage(doc: jsPDF, t: Theme, input: ReportInput): Promise<void> {
+  const { chart } = input;
+  paintPage(doc, t);
+  doc.setFillColor(t.accent);
+  doc.rect(0, 0, W, 7, 'F');
+  doc.setFillColor(t.hourColor);
+  doc.rect(0, 7, W, 1, 'F');
+
+  let y = 30;
+  rich(doc, 'ASTROSATTWA', W / 2, y, { size: 9, color: t.highlight, bold: true, spacing: 1.6, align: 'center' });
+  y += 17;
+  rich(doc, 'Mapa Astral', W / 2, y, { size: 34, color: t.text, bold: true, align: 'center' });
+  y += 13;
+  if (input.name) {
+    rich(doc, fit(doc, input.name, W - 2 * M - 20, 20, true), W / 2, y, { size: 20, color: t.highlight, bold: true, align: 'center' });
+    y += 10;
+  }
+  rich(doc, `${ddmmyyyy(input.date)} · ${hhmm(input.date)} · ${fit(doc, input.location.name, 110, 11)}`, W / 2, y, { size: 11, color: t.text, align: 'center' });
+  y += 6;
+  const sys = chart.zodiacSystem === 'sidereal'
+    ? `zodíaco sideral · ayanamsa Lahiri ${calculateLahiriAyanamsa(input.date).toFixed(2)}°`
+    : 'zodíaco tropical';
+  const coords = `${Math.abs(input.location.lat).toFixed(2)}°${input.location.lat >= 0 ? 'N' : 'S'} ${Math.abs(input.location.lon).toFixed(2)}°${input.location.lon >= 0 ? 'L' : 'O'}`;
+  rich(doc, `${coords} · ${sys}`, W / 2, y, { size: 8.5, color: t.faint, align: 'center' });
+
+  // As duas mandalas lado a lado
+  y += 12;
+  const chartW = (W - 2 * M - 8) / 2;
+  await drawSvg(doc, React.createElement(MandalaChart, { data: chart }), t, M, y, chartW, chartW);
+  const vInset = 4;
+  await drawSvg(doc, React.createElement(VedicChart, { data: chart }), t, M + chartW + 8 + vInset, y + vInset, chartW - 2 * vInset, chartW - 2 * vInset);
+  y += chartW + 5;
+  rich(doc, 'MANDALA OCIDENTAL', M + chartW / 2, y, { size: 7, color: t.faint, spacing: 0.5, align: 'center' });
+  rich(doc, 'MAPA VÉDICO · RASHI', M + chartW + 8 + chartW / 2, y, { size: 7, color: t.faint, spacing: 0.5, align: 'center' });
+
+  // Sumário
+  y += 14;
+  const boxW = 130;
+  const bx = (W - boxW) / 2;
+  card(doc, t, bx, y, boxW, 30);
+  rich(doc, 'NESTA LEITURA', bx + 7, y + 7, { size: 7, color: t.highlight, bold: true, spacing: 0.4 });
+  rich(doc, 'I', bx + 7, y + 15, { size: 9, color: t.highlight, bold: true });
+  rich(doc, 'Leitura védica', bx + 14, y + 15, { size: 10, color: t.text, bold: true });
+  rich(doc, 'Lagna, regente, Lua, nakshatra e casas', bx + 46, y + 15, { size: 8.5, color: t.muted });
+  rich(doc, 'II', bx + 7, y + 23, { size: 9, color: t.highlight, bold: true });
+  rich(doc, 'Leitura ocidental', bx + 14, y + 23, { size: 10, color: t.text, bold: true });
+  rich(doc, 'mandala, aspectos, horas e leitura breve', bx + 46, y + 23, { size: 8.5, color: t.muted });
+
+  rich(doc, 'Leitura descritiva, sem caráter de previsão.', W / 2, H - 16, { size: 8, color: t.faint, align: 'center' });
+  doc.setFillColor(t.accent);
+  doc.rect(0, H - 7, W, 7, 'F');
+}
+
+/* ── Leitura védica ── */
+
+const V_SIZE = 9;
+const V_LH = 4.4;
+
+interface Story {
+  kicker?: string;
+  title: Seg[];
+  right?: Seg[];
+  paras: Seg[][];
+  edge?: string;
+}
+
+const PARA_GAP = 3.2 + V_LH - 0.4; // da linha de base anterior à primeira linha do parágrafo
+
+function storyHeight(doc: jsPDF, st: Story, w: number): number {
+  let cy = st.kicker ? 10.2 : 6.4;
+  for (const p of st.paras) cy = flow(doc, p, 0, cy + PARA_GAP, w - 10, V_SIZE, V_LH, false) - V_LH;
+  return cy + 4.4;
+}
+
+function drawSegs(doc: jsPDF, segs: Seg[], x: number, y: number, size: number, align: 'left' | 'right' = 'left'): void {
+  const total = segs.reduce((s, g) => s + textWidth(doc, g.text, size, g.bold) + (g.bold ? BOLD_SLACK : 0), 0);
+  let cx = align === 'right' ? x - total : x;
+  for (const g of segs) cx += rich(doc, g.text, cx, y, { size, color: g.color, bold: g.bold }) + (g.bold ? BOLD_SLACK : 0);
+}
+
+function drawStory(doc: jsPDF, t: Theme, st: Story, y: number, h: number): void {
+  const x = M;
+  const w = W - 2 * M;
+  card(doc, t, x, y, w, h, st.edge);
+  let cy = y + (st.kicker ? 5.6 : 6.4);
+  if (st.kicker) {
+    rich(doc, st.kicker, x + 5, cy, { size: 6.8, color: t.highlight, bold: true, spacing: 0.4 });
+    cy += 4.6;
+  }
+  drawSegs(doc, st.title, x + 5, cy, 10.5);
+  if (st.right) drawSegs(doc, st.right, x + w - 5, cy, 9, 'right');
+  for (const p of st.paras) cy = flow(doc, p, x + 5, cy + PARA_GAP, w - 10, V_SIZE, V_LH) - V_LH;
+}
+
+/** Coloca um bloco, abrindo página nova se não couber. Devolve o y seguinte. */
+function placeStory(doc: jsPDF, t: Theme, input: ReportInput, st: Story, y: number): number {
+  const h = storyHeight(doc, st, W - 2 * M);
+  if (y + h > CONTENT_BOTTOM) y = newPage(doc, t, input);
+  drawStory(doc, t, st, y, h);
+  return y + h + 3.5;
+}
+
+const pName = (name: string) => `${glyph(name)} ${nameOf(name)}`;
+const signLabel = (lon: number) => { const s = signOf(lon); return `${s.glyph} ${signName(s.name)}`; };
+const degMin = (d: number) => { let g = Math.floor(d); let m = Math.round((d - g) * 60); if (m === 60) { g += 1; m = 0; } return `${g}°${pad(m)}'`; };
+
+/* Frase única por posição, na ordem: onde estou → o que o astro representa → que energia está ali. */
+
+const B = (text: string, color: string): Seg => ({ text, color, bold: true });
+const N = (text: string, color: string): Seg => ({ text, color });
+
+/** Qualidades do signo, sem o prefixo técnico de elemento e modalidade. */
+const signQualities = (key: string) => SIGN_INFO[key].energy.split(': ').slice(1).join(': ');
+
+function grahaSubject(t: Theme, chart: ChartData, name: string, capital = false): Seg[] {
+  const p = chart.planets.find(q => q.name === name)!;
+  const subj = GRAHA_INFO[name].subject;
+  // Rahu e Ketu já têm o nome sânscrito como nome: não repete
+  const inner = [subj === GRAHA_NAMES[name] ? '' : GRAHA_NAMES[name], p.isRetrograde ? 'retrógrado' : ''].filter(Boolean).join(', ');
+  return [B(`${capital ? cap(subj) : subj}${inner ? ` (${inner})` : ''}`, PLANET_COLORS[name] ?? t.text)];
+}
+
+/** Avaliação: dignidade no signo (e, se pedido, o tipo da casa onde está). */
+function conditionSegs(t: Theme, chart: ChartData, name: string, withHouse: boolean): Seg[] {
+  const p = chart.planets.find(q => q.name === name)!;
+  const d = grahaDignity(name, p.longitude);
+  const text = `${cap(GRAHA_INFO[name].subject)} ${dignityText(d.kind, signName(d.sign), nameOf(d.lord))}.`;
+  const house = withHouse ? ` ${HOUSE_TYPE_TEXT[wholeSignHouse(p.longitude, chart) - 1]}` : '';
+  return [N(text + house, t.text)];
+}
+
+/** Graha posicionado: onde está, o que representa, a energia do signo e a condição, num texto só. */
+function placementParas(t: Theme, chart: ChartData, name: string): Seg[][] {
+  const p = chart.planets.find(q => q.name === name)!;
+  const h = wholeSignHouse(p.longitude, chart);
+  const b = BHAVA_TEXT[h - 1];
+  const sign = signOf(p.longitude).name;
+  return [[
+    ...grahaSubject(t, chart, name, true), N(' está na ', t.text), B(`casa ${h} (${b.name})`, t.text),
+    N(`, ${b.principle} Ali, representa ${GRAHA_INFO[name].what}, com a energia de `, t.text),
+    B(`${signName(sign)} (${SIGN_INFO[sign].skt})`, t.text), N(`: ${signQualities(sign)}. `, t.text),
+    ...conditionSegs(t, chart, name, true),
+  ]];
+}
+
+function placementTitle(t: Theme, chart: ChartData, name: string): Seg[] {
+  const p = chart.planets.find(q => q.name === name)!;
+  const s = signOf(p.longitude);
+  return [
+    { text: pName(name), color: PLANET_COLORS[name] ?? t.text, bold: true },
+    { text: ` (${GRAHA_NAMES[name]})${p.isRetrograde ? ' R' : ''}`, color: t.muted },
+    { text: ` em ${s.glyph} ${signName(s.name)} ${degMin(getZodiacSign(p.longitude).degree + getZodiacSign(p.longitude).minute / 60)} · casa ${wholeSignHouse(p.longitude, chart)}`, color: t.text, bold: true },
+  ];
+}
+
+function vedicSummary(doc: jsPDF, t: Theme, chart: ChartData, x: number, y: number, w: number): void {
+  const lagna = signOf(chart.ascendant);
+  const ruler = VEDIC_RULERS[lagna.name];
+  const rp = chart.planets.find(p => p.name === ruler);
+  const moon = chart.planets.find(p => p.name === 'Moon');
+  const nk = chart.moonPhase.lunarMansion;
+  const data = NAKSHATRA_DATA[nk.number - 1];
+  const asc = getZodiacSign(chart.ascendant);
+  const rows: [string, string][] = [
+    ['Lagna', `${lagna.glyph} ${signName(lagna.name)} (${SIGN_INFO[lagna.name].skt}) ${asc.degree}°${pad(asc.minute)}'`],
+    ['Regente do Lagna', rp ? `${pName(ruler)} em ${signLabel(rp.longitude)} · casa ${wholeSignHouse(rp.longitude, chart)}` : '—'],
+    ['Lua', moon ? `${signLabel(moon.longitude)} · casa ${wholeSignHouse(moon.longitude, chart)}` : '—'],
+    ['Janma nakshatra', moon ? `${nk.number} · ${nk.name} · pada ${nakshatraPada(moon.longitude)}` : nk.name],
+    ['Regente do nakshatra', `${data.lord} (início da Vimshottari)`],
+    ['Zodíaco', chart.zodiacSystem === 'sidereal' ? 'Sideral (Lahiri)' : 'Tropical'],
+  ];
+  let cy = y + 4;
+  for (const [k, v] of rows) {
+    rich(doc, k.toUpperCase(), x, cy, { size: 6.5, color: t.faint, bold: true, spacing: 0.3 });
+    rich(doc, fit(doc, v, w, 10), x, cy + 5, { size: 10, color: t.text, bold: true });
+    cy += 12.4;
+  }
+  doc.setDrawColor(t.line);
+  doc.setLineWidth(0.2);
+  doc.line(x - 4, y, x - 4, cy - 4);
+}
+
+/** Faixa do nakshatra em texto: "entre 3°20' e 16°40' de Escorpião" ou atravessando signos. */
+function spanText(idx: number): string {
+  const { from, to } = nakshatraSpan(idx);
+  const sn = (i: number) => signName(ZODIAC_SIGNS[i].name);
+  return from[0] === to[0]
+    ? `entre ${degMin(from[1])} e ${degMin(to[1])} de ${sn(from[0])}`
+    : `entre ${degMin(from[1])} de ${sn(from[0])} e ${degMin(to[1])} de ${sn(to[0])}`;
+}
+
+/** Frase de posição (ao lado do símbolo). */
+function nakshatraLead(t: Theme, chart: ChartData, idx: number): Seg[] {
+  const moon = chart.planets.find(p => p.name === 'Moon');
+  const where = moon ? `no pada ${nakshatraPada(moon.longitude)} de ` : 'em ';
+  return [
+    N(`A Lua está ${where}`, t.text), B(NAKSHATRAS[idx], t.text),
+    N(`, ${spanText(idx)}, nakshatra regido por ${NAKSHATRA_DATA[idx].lord}.`, t.text),
+  ];
+}
+
+/** Texto corrido (largura total). */
+function nakshatraBody(t: Theme, chart: ChartData, idx: number): Seg[][] {
+  const info = NAKSHATRA_INFO[idx];
+  const data = NAKSHATRA_DATA[idx];
+  const moon = chart.planets.find(p => p.name === 'Moon');
+  const paras: Seg[][] = [[N(info.text, t.text)]];
+  const tail: Seg[] = [];
+  if (moon) {
+    const pada = nakshatraPada(moon.longitude);
+    const nav = ZODIAC_SIGNS[padaNavamsha(idx, pada)].name;
+    tail.push(N(`O pada ${pada} corresponde ao navamsha de `, t.text), B(`${signName(nav)} (${SIGN_INFO[nav].skt})`, t.text),
+      N(`, o que dá a esta parte do nakshatra uma energia ${SIGN_INFO[nav].energy}. `, t.text));
+  }
+  const years = DASHA_YEARS[data.lord];
+  tail.push(N(`Por ser regido por ${data.lord}, o nakshatra da Lua abre a Vimshottari com o período (dasha) de ${data.lord}${years ? `, de ${years} anos` : ''}.`, t.text));
+  paras.push(tail);
+  paras.push([N(`${NATURE_TEXT[info.nature]} Gana ${GANA_TEXT[data.gana] ?? data.gana}; yoni ${info.yoni}.`, t.muted)]);
+  return paras;
+}
+
+async function nakshatraStory(doc: jsPDF, t: Theme, input: ReportInput, y: number): Promise<number> {
+  const { chart } = input;
+  const nk = chart.moonPhase.lunarMansion;
+  const idx = nk.number - 1;
+  const data = NAKSHATRA_DATA[idx];
+  const x = M;
+  const w = W - 2 * M;
+  const sym = 36;
+  const tx = x + 6 + sym + 8;
+  const tw = x + w - 6 - tx;
+
+  // Alturas: cabeçalho (símbolo | título + frase de posição) e corpo em largura total
+  const leadEnd = flow(doc, nakshatraLead(t, chart, idx), 0, 22, tw, V_SIZE, V_LH, false) - V_LH;
+  const headH = Math.max(6 + sym + 12, leadEnd + 4);
+  const body = nakshatraBody(t, chart, idx);
+  let bodyEnd = headH - PARA_GAP + V_LH;
+  for (const p of body) bodyEnd = flow(doc, p, 0, bodyEnd + PARA_GAP, w - 12, V_SIZE, V_LH, false) - V_LH;
+  const h = bodyEnd + 5;
+  if (y + h > CONTENT_BOTTOM) y = newPage(doc, t, input);
+
+  card(doc, t, x, y, w, h, t.highlight);
+  await drawSvg(doc, React.createElement(NakshatraSymbol, {
+    index: idx, color: t.highlight, bg: blend(t.accent, t.raised, 0.18), ring: blend(t.highlight, t.raised, 0.55),
+  }), t, x + 6, y + 6, sym, sym);
+  const cx = x + 6 + sym / 2;
+  rich(doc, fit(doc, NAKSHATRAS[idx], sym + 8, 9.5, true), cx, y + 6 + sym + 5, { size: 9.5, color: t.text, bold: true, align: 'center' });
+  rich(doc, fit(doc, data.symbol.toLowerCase(), sym + 8, 7.5), cx, y + 6 + sym + 9.2, { size: 7.5, color: t.faint, align: 'center' });
+
+  rich(doc, 'NAKSHATRA DA LUA · JANMA NAKSHATRA', tx, y + 7, { size: 6.8, color: t.highlight, bold: true, spacing: 0.4 });
+  let hx = tx;
+  hx += rich(doc, `${nk.number}`, hx, y + 15, { size: 16, color: t.faint, bold: true }) + 3;
+  hx += rich(doc, NAKSHATRAS[idx], hx, y + 15, { size: 16, color: t.text, bold: true }) + BOLD_SLACK + 3;
+  // Nome do símbolo escrito ao lado do nome do nakshatra
+  rich(doc, `· ${data.symbol.toLowerCase()}`, hx, y + 15, { size: 13, color: t.highlight });
+  flow(doc, nakshatraLead(t, chart, idx), tx, y + 22, tw, V_SIZE, V_LH);
+
+  doc.setDrawColor(t.line);
+  doc.setLineWidth(0.15);
+  doc.line(x + 6, y + headH, x + w - 6, y + headH);
+  let py = y + headH - PARA_GAP + V_LH;
+  for (const p of body) py = flow(doc, p, x + 6, py + PARA_GAP, w - 12, V_SIZE, V_LH) - V_LH;
+  return y + h + 3.5;
+}
+
+function houseStory(t: Theme, chart: ChartData, house: number): Story {
+  const sign = ZODIAC_SIGNS[houseSignIndex(chart, house)];
+  const b = BHAVA_TEXT[house - 1];
+  const grahas = grahasInHouse(chart, house);
+  const paras: Seg[][] = [[
+    N(`Esta é ${b.principle} ${b.classic} Está com a energia ${signQualities(sign.name)}.`, t.text),
+  ]];
+  grahas.forEach((g, i) => {
+    const d = grahaDignity(g.name, g.longitude);
+    paras.push([
+      N(i === 0 ? 'Nela está ' : 'Também nela está ', t.text), ...grahaSubject(t, chart, g.name),
+      N(`, que representa ${GRAHA_INFO[g.name].what}, e que ${dignityText(d.kind, signName(d.sign), nameOf(d.lord))}.`, t.text),
+    ]);
+  });
+  return {
+    title: [
+      { text: `Casa ${house} · ${b.name}`, color: t.text, bold: true },
+      { text: ` ("${b.meaning}")   ${sign.glyph} ${signName(sign.name)}`, color: t.muted },
+    ],
+    right: grahas.map(g => ({ text: ` ${glyph(g.name)}`, color: PLANET_COLORS[g.name] ?? t.text })),
+    paras,
+    edge: sign.color,
+  };
+}
+
+async function vedicReading(doc: jsPDF, t: Theme, input: ReportInput): Promise<void> {
+  const { chart } = input;
+  doc.addPage();
+  paintPage(doc, t);
+  let y = header(doc, t, input, false, 'LEITURA VÉDICA') + 7;
+  const fullW = W - 2 * M;
+
+  // Rashi + resumo
+  const chartW = 92;
+  sectionTitle(doc, t, 'Mapa védico · Rashi', M, y, chartW);
+  sectionTitle(doc, t, 'Em resumo', M + chartW + 10, y, fullW - chartW - 10);
+  y += 4;
+  await drawSvg(doc, React.createElement(VedicChart, { data: chart }), t, M + 2, y + 2, chartW - 4, chartW - 4);
+  vedicSummary(doc, t, chart, M + chartW + 14, y + 2, fullW - chartW - 14);
+  y += chartW + 6;
+
+  // Lagna
+  const lagna = signOf(chart.ascendant);
+  const li = SIGN_INFO[lagna.name];
+  const asc = getZodiacSign(chart.ascendant);
+  y = placeStory(doc, t, input, {
+    kicker: 'ASCENDENTE · LAGNA',
+    title: [
+      { text: `Lagna em ${lagna.glyph} ${signName(lagna.name)}`, color: t.text, bold: true },
+      { text: ` (${li.skt}) ${asc.degree}°${pad(asc.minute)}'`, color: t.muted },
+    ],
+    paras: [
+      [N(LAGNA_TEXT[lagna.name], t.text)],
+      [N('O Lagna é o signo que se elevava no horizonte leste no momento considerado; por signo inteiro, ele é a casa 1 e ordena todas as demais.', t.faint)],
+    ],
+    edge: lagna.color,
+  }, y);
+
+  // Regente do Lagna
+  const ruler = VEDIC_RULERS[lagna.name];
+  if (chart.planets.some(p => p.name === ruler)) {
+    y = placeStory(doc, t, input, {
+      kicker: 'REGENTE DO ASCENDENTE · LAGNESHA',
+      title: placementTitle(t, chart, ruler),
+      paras: (() => {
+        const rp = chart.planets.find(p => p.name === ruler)!;
+        const rh = wholeSignHouse(rp.longitude, chart);
+        return [
+          [
+            N(`Regente de ${signName(lagna.name)}, `, t.text), ...grahaSubject(t, chart, ruler),
+            N(' leva os temas da primeira casa para a ', t.text), B(`casa ${rh} (${BHAVA_TEXT[rh - 1].name})`, t.text),
+            N(`: ${BHAVA_TEXT[rh - 1].lagnesha}`, t.text),
+          ],
+          [
+            N(`Ali, representa ${GRAHA_INFO[ruler].what}, com a energia de `, t.text),
+            B(`${signName(signOf(rp.longitude).name)} (${SIGN_INFO[signOf(rp.longitude).name].skt})`, t.text),
+            N(`: ${signQualities(signOf(rp.longitude).name)}. `, t.text),
+            ...conditionSegs(t, chart, ruler, true),
+          ],
+        ];
+      })(),
+      edge: PLANET_COLORS[ruler],
+    }, y);
+  }
+
+  // Lua
+  if (chart.planets.some(p => p.name === 'Moon')) {
+    y = placeStory(doc, t, input, {
+      kicker: 'LUA · CHANDRA',
+      title: placementTitle(t, chart, 'Moon'),
+      paras: placementParas(t, chart, 'Moon'),
+      edge: PLANET_COLORS.Moon,
+    }, y);
+  }
+
+  // Nakshatra
+  y = await nakshatraStory(doc, t, input, y);
+
+  // Casas
+  for (const [gi, group] of HOUSE_GROUPS.entries()) {
+    const stories = group.houses.map(h => houseStory(t, chart, h));
+    const firstH = storyHeight(doc, stories[0], fullW);
+    const headH = (gi === 0 ? 16 : 0) + 9;
+    if (y + headH + firstH > CONTENT_BOTTOM) y = newPage(doc, t, input);
+    if (gi === 0) {
+      sectionTitle(doc, t, 'As casas · bhavas', M, y + 3, fullW);
+      y = paragraph(doc, 'Por signo inteiro, a partir do Lagna, na ordem da tradição: kendras, trikonas, dusthanas, upachayas e a casa 2.',
+        M, y + 9, fullW, 8, t.muted, 3.6) + 3;
+    }
+    let cx = M;
+    cx += rich(doc, group.title.toUpperCase(), cx, y + 3, { size: 7.5, color: t.highlight, bold: true, spacing: 0.4 }) + 3;
+    rich(doc, `casas ${group.houses.join(', ')} · ${group.note}`, cx, y + 3, { size: 7.5, color: t.faint });
+    y += 6;
+    for (const st of stories) y = placeStory(doc, t, input, st, y);
+    y += 2;
+  }
+}
+
 export async function buildReport(input: ReportInput): Promise<jsPDF> {
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
   await registerFonts(doc);
   const t = makeTheme(input);
   const { chart } = input;
-  doc.setProperties({ title: `Astrosattwa · ${ddmmyyyy(input.date)} ${hhmm(input.date)}`, creator: 'Astrosattwa' });
+  const who = input.name ? `${input.name} · ` : '';
+  doc.setProperties({ title: `Astrosattwa · ${who}${ddmmyyyy(input.date)} ${hhmm(input.date)}`, creator: 'Astrosattwa' });
+  const parts: Part[] = [];
+  const mark = (part: Part) => { while (parts.length < doc.getNumberOfPages()) parts.push(part); };
 
-  /* Página 1 */
+  /* Capa */
+  await coverPage(doc, t, input);
+  mark('cover');
+
+  /* Leitura védica */
+  await vedicReading(doc, t, input);
+  mark('vedic');
+
+  /* Leitura ocidental */
+  doc.addPage();
   paintPage(doc, t);
-  let y = header(doc, t, input, false) + 5;
+  let y = header(doc, t, input, false, 'LEITURA OCIDENTAL') + 5;
   y = statusCards(doc, t, input, y) + 8;
 
-  const chartW = (W - 2 * M - 8) / 2;
-  sectionTitle(doc, t, 'Mandala', M, y, chartW);
-  sectionTitle(doc, t, 'Mapa védico · Rashi', M + chartW + 8, y, chartW);
-  y += 4;
-  await drawSvg(doc, React.createElement(MandalaChart, { data: chart }), t, M, y, chartW, chartW);
-  // O mapa védico tem uma margem interna menor: reduz um pouco para alinhar com a mandala
-  const vInset = 4;
-  await drawSvg(doc, React.createElement(VedicChart, { data: chart }), t, M + chartW + 8 + vInset, y + vInset, chartW - 2 * vInset, chartW - 2 * vInset);
-  y += chartW + 6;
+  const chartW = 100;
+  sectionTitle(doc, t, 'Mandala', M, y, W - 2 * M);
+  y += 3;
+  await drawSvg(doc, React.createElement(MandalaChart, { data: chart }), t, (W - chartW) / 2, y, chartW, chartW);
+  y += chartW + 4;
 
   sectionTitle(doc, t, 'Posições', M, y, W - 2 * M);
   y = positionsTable(doc, t, chart, y + 6.5) + 6;
@@ -758,23 +1166,25 @@ export async function buildReport(input: ReportInput): Promise<jsPDF> {
 
   /* Páginas seguintes: leitura breve natal */
   briefReading(doc, t, input);
+  mark('western');
 
   const pages = doc.getNumberOfPages();
   for (let p = 1; p <= pages; p++) {
     doc.setPage(p);
-    footer(doc, t, input, p, pages);
+    footer(doc, t, input, p, pages, parts[p - 1]);
   }
   return doc;
 }
 
-export function reportFileName(date: Date): string {
-  return `astrosattwa-${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}-${pad(date.getHours())}${pad(date.getMinutes())}.pdf`;
+export function reportFileName(date: Date, name?: string): string {
+  const slug = (name ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  return `astrosattwa-${slug ? `${slug}-` : ''}${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}-${pad(date.getHours())}${pad(date.getMinutes())}.pdf`;
 }
 
 /** Gera o PDF e entrega: download no navegador, compartilhar/salvar no Android. */
 export async function exportReport(input: ReportInput): Promise<void> {
   const doc = await buildReport(input);
-  const fileName = reportFileName(input.date);
+  const fileName = reportFileName(input.date, input.name);
 
   if (!Capacitor.isNativePlatform()) {
     doc.save(fileName);
