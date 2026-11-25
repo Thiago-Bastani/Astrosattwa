@@ -29,3 +29,28 @@ export function findAspect(lon1: number, lon2: number): AspectType | null {
   }
   return null;
 }
+
+export interface FoundAspect {
+  a: string;
+  b: string;
+  aspect: AspectType;
+  /** Distância do ângulo exato, em graus */
+  orb: number;
+}
+
+/** Todos os aspectos entre os corpos, na ordem da lista de planetas (a vem antes de b). */
+export function listAspects(planets: { name: string; longitude: number }[]): FoundAspect[] {
+  const found: FoundAspect[] = [];
+  for (let i = 0; i < planets.length; i++) {
+    for (let j = i + 1; j < planets.length; j++) {
+      // Os nodos estão sempre em oposição exata: não é informação
+      if (planets[i].name === 'NorthNode' && planets[j].name === 'SouthNode') continue;
+      const asp = findAspect(planets[i].longitude, planets[j].longitude);
+      if (!asp) continue;
+      const diff = Math.abs(planets[i].longitude - planets[j].longitude);
+      const ang = diff > 180 ? 360 - diff : diff;
+      found.push({ a: planets[i].name, b: planets[j].name, aspect: asp, orb: Math.abs(ang - asp.angle) });
+    }
+  }
+  return found;
+}

@@ -47,7 +47,7 @@
 
 /* A grade de aspectos começa no canto superior esquerdo: desce para liberar o botão de PDF */
 .chart-panel-aspects .chart-view {
-  padding-top: 42px;
+  padding-top: 78px;
 }
 
 .chart-rail button.active {

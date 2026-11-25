@@ -12,5 +12,6 @@ public class SkyBootReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         SkyScheduler.update(context);
+        SkyEventScheduler.update(context);
     }
 }

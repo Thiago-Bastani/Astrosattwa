@@ -1,0 +1,128 @@
+.sky-history-modal {
+  --background: var(--as-bg-raised);
+}
+
+.sky-history-content {
+  --background: var(--as-bg-raised);
+}
+
+.sky-history {
+  padding: 18px 16px 40px;
+  color: var(--as-text);
+}
+
+.sky-history-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sky-history h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  color: var(--as-highlight);
+}
+
+.sky-history-date {
+  font-size: 0.8rem;
+  color: var(--as-muted);
+  text-transform: capitalize;
+}
+
+.sky-history-close {
+  background: none;
+  border: none;
+  color: var(--as-gold-dim);
+  font-size: 0.9rem;
+  padding: 4px 0;
+  cursor: pointer;
+}
+
+.sky-history-vedic {
+  margin: 14px 0 6px;
+  padding: 9px 11px;
+  border-radius: var(--as-radius);
+  border: 1px solid var(--as-border);
+  background: var(--as-gold-faint);
+  font-size: 0.78rem;
+  line-height: 1.4;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sky-history-vedic strong {
+  color: var(--as-highlight);
+  letter-spacing: 0.04em;
+}
+
+.sky-history-vedic span {
+  color: var(--as-muted);
+}
+
+.sky-history h3 {
+  margin: 18px 0 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--as-gold-dim);
+}
+
+.sky-history-empty {
+  font-size: 0.85rem;
+  color: var(--as-muted);
+  margin: 14px 0 0;
+}
+
+.sky-ev-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sky-ev {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--as-surface-2);
+}
+
+.sky-ev-upcoming {
+  opacity: 0.55;
+}
+
+.sky-ev-time {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85rem;
+  color: var(--as-highlight);
+  min-width: 42px;
+  padding-top: 1px;
+}
+
+.sky-ev-glyph {
+  font-size: 1.05rem;
+  width: 20px;
+  text-align: center;
+}
+
+.sky-ev-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.sky-ev-kind {
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--as-faint);
+}
+
+.sky-ev-text {
+  font-size: 0.88rem;
+  line-height: 1.35;
+}

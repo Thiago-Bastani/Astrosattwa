@@ -148,6 +148,42 @@ function calculateVertex(date: Date, location: GeoLocation): number {
 
 /* ── Fase da Lua ── */
 
+/** As 8 fases da Lua pelo ângulo Sol→Lua (índice 0 = Lua Nova). */
+export const MOON_PHASES: { name: string; emoji: string }[] = [
+  { name: 'Lua Nova',         emoji: '🌑' },
+  { name: 'Crescente',        emoji: '🌒' },
+  { name: 'Quarto Crescente', emoji: '🌓' },
+  { name: 'Gibosa Crescente', emoji: '🌔' },
+  { name: 'Lua Cheia',        emoji: '🌕' },
+  { name: 'Gibosa Minguante', emoji: '🌖' },
+  { name: 'Quarto Minguante', emoji: '🌗' },
+  { name: 'Minguante',        emoji: '🌘' },
+];
+
+export function moonPhaseIndex(angle: number): number {
+  return Math.floor(normalizeDeg(angle + 22.5) / 45) % 8;
+}
+
+function moonPhaseFromAngle(angle: number): { name: string; emoji: string } {
+  return MOON_PHASES[moonPhaseIndex(angle)];
+}
+
+/**
+ * Longitudes siderais (Lahiri) dos nove grahas e o ângulo Sol→Lua.
+ * Leve: sem casas nem retrogradação (usado na varredura de eventos do dia).
+ */
+export function vedicLongitudes(date: Date): { lons: Record<string, number>; phaseAngle: number } {
+  const ay = calculateLahiriAyanamsa(date);
+  const lons: Record<string, number> = {};
+  for (const name of ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn']) {
+    lons[name] = normalizeDeg(getPlanetLongitude(name, date) - ay);
+  }
+  const node = calculateNorthNode(date);
+  lons.NorthNode = normalizeDeg(node - ay);
+  lons.SouthNode = normalizeDeg(node + 180 - ay);
+  return { lons, phaseAngle: normalizeDeg(lons.Moon - lons.Sun) };
+}
+
 /** `ayanamsa` = 0 no tropical; Lahiri no sideral. As mansões seguem o zodíaco do mapa. */
 function calculateMoonPhase(date: Date, ayanamsa: number): MoonPhase {
   // Diferença Sol/Lua é igual em qualquer sistema (ayanamsa cancela)
@@ -156,17 +192,7 @@ function calculateMoonPhase(date: Date, ayanamsa: number): MoonPhase {
   const angle   = normalizeDeg(moonLon - sunLon);
   const illumination = Math.round((1 - Math.cos(angle * DEG)) / 2 * 100);
 
-  let name: string;
-  let emoji: string;
-
-  if (angle < 22.5 || angle >= 337.5)  { name = 'Lua Nova';          emoji = '🌑'; }
-  else if (angle < 67.5)               { name = 'Crescente';          emoji = '🌒'; }
-  else if (angle < 112.5)              { name = 'Quarto Crescente';   emoji = '🌓'; }
-  else if (angle < 157.5)              { name = 'Gibosa Crescente';   emoji = '🌔'; }
-  else if (angle < 202.5)              { name = 'Lua Cheia';          emoji = '🌕'; }
-  else if (angle < 247.5)              { name = 'Gibosa Minguante';   emoji = '🌖'; }
-  else if (angle < 292.5)              { name = 'Quarto Minguante';   emoji = '🌗'; }
-  else                                 { name = 'Minguante';          emoji = '🌘'; }
+  const { name, emoji } = moonPhaseFromAngle(angle);
 
   // Nakshatras e manazil: divisões iguais a partir de 0° Áries do zodíaco selecionado
   const mansionLon = normalizeDeg(moonLon - ayanamsa);

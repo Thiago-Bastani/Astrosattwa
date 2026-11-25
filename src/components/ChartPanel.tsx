@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { IonIcon, IonSpinner } from '@ionic/react';
-import { apertureOutline, diamondOutline, documentTextOutline, gridOutline, timeOutline } from 'ionicons/icons';
+import { apertureOutline, diamondOutline, documentTextOutline, gridOutline, listOutline, timeOutline } from 'ionicons/icons';
 import type { ChartData, GeoLocation } from '../types/astro';
 import type { PlanetaryDay } from '../utils/planetary';
 import { usePersistentState } from '../utils/usePersistentState';
@@ -8,6 +8,7 @@ import MandalaChart from './MandalaChart';
 import VedicChart from './VedicChart';
 import AspectGrid from './AspectGrid';
 import PlanetaryHoursChart from './PlanetaryHoursChart';
+import SkyHistoryModal from './SkyHistoryModal';
 import './ChartPanel.css';
 
 interface ChartPanelProps {
@@ -36,6 +37,7 @@ const ChartPanel: React.FC<ChartPanelProps> = ({ chart, date, planetaryDay, loca
   const [view, setView] = usePersistentState<ViewId>(storageKey, 'mandala');
   const active = VIEWS.some(v => v.id === view) ? view : 'mandala';
   const [exporting, setExporting] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   // O PDF é montado a partir dos dados (não da tela); o módulo só carrega ao tocar
   const handleExport = async () => {
@@ -63,6 +65,13 @@ const ChartPanel: React.FC<ChartPanelProps> = ({ chart, date, planetaryDay, loca
         >
           {exporting ? <IonSpinner name="crescent" /> : <IonIcon icon={documentTextOutline} />}
         </button>
+        <button
+          aria-label="Mudanças de hoje"
+          title="Mudanças de hoje"
+          onClick={() => setHistoryOpen(true)}
+        >
+          <IonIcon icon={listOutline} />
+        </button>
       </div>
 
       <div className="chart-rail" role="tablist" aria-label="Gráfico">
@@ -87,6 +96,8 @@ const ChartPanel: React.FC<ChartPanelProps> = ({ chart, date, planetaryDay, loca
         {active === 'aspects' && <AspectGrid planets={chart.planets} />}
         {active === 'hours' && <PlanetaryHoursChart day={planetaryDay} date={date} />}
       </div>
+
+      <SkyHistoryModal isOpen={historyOpen} onClose={() => setHistoryOpen(false)} />
     </div>
   );
 };

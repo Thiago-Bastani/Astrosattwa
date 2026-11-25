@@ -55,6 +55,18 @@ public class SkyNotificationPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void scheduleEvents(PluginCall call) {
+        JSArray events = call.getArray("events");
+        if (events == null) {
+            call.reject("events ausente");
+            return;
+        }
+        SkyEventScheduler.saveEvents(getContext(), events);
+        SkyEventScheduler.update(getContext());
+        call.resolve();
+    }
+
+    @PluginMethod
     public void stop(PluginCall call) {
         SkyScheduler.clear(getContext());
         call.resolve();

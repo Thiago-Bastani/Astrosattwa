@@ -31,6 +31,9 @@
         <!-- Notificação contínua "Céu agora": troca de texto agendada -->
         <receiver android:name=".SkyAlarmReceiver" android:exported="false" />
 
+        <!-- Mudanças do céu (signo, decanato, fase, nakshatra, manzil) -->
+        <receiver android:name=".SkyEventReceiver" android:exported="false" />
+
         <!-- Reagenda após reinício, atualização do app ou mudança de relógio/fuso -->
         <receiver android:name=".SkyBootReceiver" android:exported="true">
             <intent-filter>

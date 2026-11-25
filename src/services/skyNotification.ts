@@ -4,6 +4,7 @@ import { calculateChart } from './astroCalculator';
 import { getPlanetaryDay } from '../utils/planetary';
 import { getZodiacSign, PLANET_GLYPHS } from '../utils/zodiac';
 import { PLANET_NAMES_PT, SIGN_NAMES_PT } from '../utils/astroLabels';
+import { findSkyEvents, type SkyEventKind } from './skyEvents';
 
 /**
  * Notificação contínua "Céu agora" (Android).
@@ -24,6 +25,7 @@ export interface SkySnapshot {
 interface SkyNotificationPlugin {
   requestNotificationPermission(): Promise<{ granted: boolean }>;
   schedule(options: { snapshots: SkySnapshot[] }): Promise<void>;
+  scheduleEvents(options: { events: { at: number; key: string; title: string; text: string }[] }): Promise<void>;
   stop(): Promise<void>;
 }
 
@@ -110,7 +112,31 @@ export async function refreshSkyNotification(location: GeoLocation): Promise<voi
     await new Promise(r => setTimeout(r, 300));
     const snapshots = buildSnapshots(Date.now(), location);
     if (snapshots.length) await SkyNotification.schedule({ snapshots });
+    await scheduleEventNotifications();
   } catch (err) {
     console.warn('[SkyNotification]', err);
   }
+}
+
+const EVENT_TITLES: Record<SkyEventKind, string> = {
+  sign: 'Troca de signo',
+  decan: 'Troca de decanato',
+  phase: 'Fase da Lua',
+  nakshatra: 'Novo nakshatra',
+  manzil: 'Nova manzil',
+};
+
+/**
+ * Avisos das mudanças do céu (védico) das próximas 48h. O nativo guarda o
+ * instante do último aviso, então reagendar a lista nunca repete notificação.
+ */
+async function scheduleEventNotifications(): Promise<void> {
+  const now = Date.now();
+  const events = findSkyEvents(now - 3600_000, now + HORIZON_MS).map(e => ({
+    at: e.at,
+    key: e.key,
+    title: `${e.glyph} ${EVENT_TITLES[e.kind]}`,
+    text: e.text,
+  }));
+  await SkyNotification.scheduleEvents({ events });
 }

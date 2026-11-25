@@ -9,7 +9,11 @@ import { getCurrentTattwa, type TattwaInfo } from '../../utils/tattwa';
 import { DAY_PALETTES, paletteToCssVars } from '../../theme/palettes';
 import { PLANET_COLORS, PLANET_GLYPHS, ZODIAC_SIGNS, getZodiacSign } from '../../utils/zodiac';
 import { PLANET_NAMES_PT, SIGN_NAMES_PT } from '../../utils/astroLabels';
-import { ASPECTS, findAspect } from '../../utils/aspects';
+import { ASPECTS, listAspects, type FoundAspect } from '../../utils/aspects';
+import {
+  ASPECT_WORDS, HOUSE_KEYWORDS, PLANET_KEYWORDS, SIGN_KEYWORDS,
+  REAL_HOUSE_ANGULAR_ORB, REAL_HOUSE_COMMON_ORB, getRealHouse, isApproximate, orientBySpeed, speedRank,
+} from '../../utils/briefReading';
 import { calculateLahiriAyanamsa } from '../astroCalculator';
 import MandalaChart from '../../components/MandalaChart';
 import VedicChart from '../../components/VedicChart';
@@ -19,7 +23,7 @@ import { registerFonts, setRunFont, splitRuns } from './pdfFonts';
 import { chartToSvg } from './pdfSvg';
 
 /**
- * Relatório em PDF (A4, 2 páginas) montado só a partir dos dados do mapa:
+ * Relatório em PDF (A4: mapa, aspectos e leitura breve natal) montado só a partir dos dados do mapa:
  * mesmo conteúdo e mesmo layout em qualquer aparelho, independente da tela.
  */
 
@@ -168,6 +172,13 @@ const nameOf = (name: string) => PLANET_NAMES_PT[name] ?? name;
 function lonLabel(lon: number): string {
   const { sign, degree, minute } = getZodiacSign(lon);
   return `${sign.glyph} ${degree}°${pad(minute)}'`;
+}
+
+function orbLabel(orb: number): string {
+  let deg = Math.floor(orb);
+  let min = Math.round((orb - deg) * 60);
+  if (min === 60) { deg += 1; min = 0; }
+  return `${deg}°${pad(min)}'`;
 }
 
 const DIGNITY_PT: Record<string, { label: string; color: string }> = {
@@ -413,20 +424,7 @@ function aspectLegend(doc: jsPDF, t: Theme, x: number, y: number, w: number): nu
 }
 
 function aspectList(doc: jsPDF, t: Theme, chart: ChartData, y: number): number {
-  const ps = chart.planets;
-  const found: { a: string; b: string; aspect: (typeof ASPECTS)[number]; orb: number }[] = [];
-  for (let i = 0; i < ps.length; i++) {
-    for (let j = i + 1; j < ps.length; j++) {
-      // Os nodos estão sempre em oposição exata: não é informação
-      if (ps[i].name === 'NorthNode' && ps[j].name === 'SouthNode') continue;
-      const asp = findAspect(ps[i].longitude, ps[j].longitude);
-      if (!asp) continue;
-      const diff = Math.abs(ps[i].longitude - ps[j].longitude);
-      const ang = diff > 180 ? 360 - diff : diff;
-      found.push({ a: ps[i].name, b: ps[j].name, aspect: asp, orb: Math.abs(ang - asp.angle) });
-    }
-  }
-  found.sort((p, q) => p.orb - q.orb);
+  const found = listAspects(chart.planets).sort((p, q) => p.orb - q.orb);
 
   const cols = 3;
   const colW = (W - 2 * M) / cols;
@@ -443,8 +441,7 @@ function aspectList(doc: jsPDF, t: Theme, chart: ChartData, y: number): number {
     cx += rich(doc, f.aspect.glyph, cx, base, { size: 8.5, color: f.aspect.color }) + 1;
     cx += rich(doc, glyph(f.b), cx, base, { size: 8.5, color: PLANET_COLORS[f.b] ?? t.text }) + 2;
     rich(doc, fit(doc, `${nameOf(f.a)} ${f.aspect.name.toLowerCase()} ${nameOf(f.b)}`, colW - (cx - x) - 12, 7.5), cx, base, { size: 7.5, color: t.text });
-    const deg = Math.floor(f.orb);
-    rich(doc, `${deg}°${pad(Math.round((f.orb - deg) * 60))}'`, x + colW - 4, base, { size: 7, color: t.faint, align: 'right' });
+    rich(doc, orbLabel(f.orb), x + colW - 4, base, { size: 7, color: t.faint, align: 'right' });
   });
   if (!found.length) rich(doc, 'Nenhum aspecto dentro das orbes.', M, y, { size: 8, color: t.muted });
   const rows = Math.min(maxRows, Math.max(1, shown.length));
@@ -487,6 +484,224 @@ function hoursTable(doc: jsPDF, t: Theme, day: PlanetaryDay, y: number): number 
 
 /* ── Montagem ── */
 
+/* ── Leitura breve natal ── */
+
+const CONTENT_BOTTOM = H - 15;
+
+function newPage(doc: jsPDF, t: Theme, input: ReportInput): number {
+  doc.addPage();
+  paintPage(doc, t);
+  return header(doc, t, input, true) + 8;
+}
+
+/** Escreve um parágrafo quebrando linhas; devolve o y após a última linha. */
+function paragraph(doc: jsPDF, text: string, x: number, y: number, w: number, size: number, color: string, lh: number): number {
+  doc.setFontSize(size);
+  setRunFont(doc, 'times', false);
+  const lines: string[] = doc.splitTextToSize(text, w);
+  lines.forEach((l, i) => rich(doc, l, x, y + i * lh, { size, color }));
+  return y + lines.length * lh;
+}
+
+/** "a, b e c" */
+function listPt(words?: readonly string[]): string {
+  if (!words || !words.length) return '—';
+  if (words.length === 1) return words[0];
+  return `${words.slice(0, -1).join(', ')} e ${words[words.length - 1]}`;
+}
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+interface Seg { text: string; color: string; bold?: boolean }
+
+/**
+ * Texto corrido com trechos de estilos diferentes, quebrando por palavra.
+ * Com draw = false só mede. Devolve o y da linha seguinte.
+ */
+function flow(doc: jsPDF, segs: Seg[], x: number, y: number, w: number, size: number, lh: number, draw = true): number {
+  const words: Seg[] = [];
+  for (const s of segs) {
+    s.text.split(/(\s+)/).filter(Boolean).forEach(p => words.push({ ...s, text: p }));
+  }
+  let cx = x;
+  let cy = y;
+  let lineStart = true;
+  for (const wd of words) {
+    const isSpace = /^\s+$/.test(wd.text);
+    if (isSpace && lineStart) continue;
+    const ww = textWidth(doc, wd.text, size, wd.bold);
+    if (!isSpace && cx + ww > x + w && !lineStart) {
+      cx = x;
+      cy += lh;
+      lineStart = true;
+    }
+    if (draw && !isSpace) rich(doc, wd.text, cx, cy, { size, color: wd.color, bold: wd.bold });
+    cx += ww;
+    lineStart = false;
+  }
+  return cy + lh;
+}
+
+const signOf = (lon: number) => getZodiacSign(lon).sign;
+const signName = (name: string) => SIGN_NAMES_PT[name] ?? name;
+
+const READ_SIZE = 8.6;
+const READ_LH = 4.1;
+
+/* Casas */
+
+function houseSegs(t: Theme, chart: ChartData, i: number): Seg[] {
+  const sign = signOf(chart.houseCusps[i]);
+  return [
+    { text: cap(listPt(HOUSE_KEYWORDS[i])), color: t.text, bold: true },
+    { text: ' na energia de ', color: t.faint },
+    { text: `${listPt(SIGN_KEYWORDS[sign.name])}.`, color: t.muted },
+  ];
+}
+
+function houseCard(doc: jsPDF, t: Theme, chart: ChartData, i: number, x: number, y: number, w: number, h: number): void {
+  const sign = signOf(chart.houseCusps[i]);
+  card(doc, t, x, y, w, h, sign.color);
+  const lx = x + 4;
+
+  // Referência discreta: casa, signo e corpos (casa real; * = veio da casa anterior)
+  let cx = lx;
+  cx += rich(doc, `Casa ${i + 1}`, cx, y + 4.6, { size: 6.5, color: t.faint, spacing: 0.2 }) + 1.5;
+  rich(doc, `${sign.glyph} ${signName(sign.name)}`, cx, y + 4.6, { size: 6.5, color: t.faint, spacing: 0.2 });
+  const bodies = chart.planets.filter(p => getRealHouse(p.longitude, chart) === i + 1);
+  let gx = x + w - 3.5;
+  for (const p of [...bodies].reverse()) {
+    if (p.house !== undefined && p.house !== i + 1) gx -= rich(doc, '*', gx, y + 4.6, { size: 6.5, color: t.faint, align: 'right' });
+    gx -= rich(doc, glyph(p.name), gx, y + 4.8, { size: 7.5, color: PLANET_COLORS[p.name] ?? t.text, align: 'right' }) + 0.8;
+  }
+
+  flow(doc, houseSegs(t, chart, i), lx, y + 9.6, w - 8, READ_SIZE, READ_LH);
+}
+
+/* Aspectos */
+
+function bodySegs(t: Theme, chart: ChartData, name: string, lead: Seg[]): Seg[] {
+  const p = chart.planets.find(q => q.name === name)!;
+  const sign = signOf(p.longitude);
+  const house = getRealHouse(p.longitude, chart);
+  const kw = listPt(PLANET_KEYWORDS[name]);
+  return [
+    ...lead,
+    { text: lead.length ? kw : cap(kw), color: t.text, bold: true },
+    { text: ', na energia de ', color: t.faint },
+    { text: listPt(SIGN_KEYWORDS[sign.name]), color: t.muted },
+    { text: ', na área de ', color: t.faint },
+    { text: listPt(HOUSE_KEYWORDS[house - 1]), color: t.muted },
+  ];
+}
+
+function bodyRef(chart: ChartData, name: string): string {
+  const p = chart.planets.find(q => q.name === name)!;
+  const sign = signOf(p.longitude);
+  const house = getRealHouse(p.longitude, chart);
+  const shifted = p.house !== undefined && p.house !== house;
+  return `${nameOf(name)} · ${sign.glyph} ${signName(sign.name)} · Casa ${house}${shifted ? '*' : ''}`;
+}
+
+function aspectBody(t: Theme, chart: ChartData, f: FoundAspect): { a: Seg[]; b: Seg[] } {
+  const word = ASPECT_WORDS[f.aspect.name] ?? f.aspect.name;
+  return {
+    a: [...bodySegs(t, chart, f.a, []), { text: ',', color: t.faint }],
+    b: [...bodySegs(t, chart, f.b, [
+      // O corpo mais lento (b) atua sobre o mais rápido (a)
+      { text: 'recebendo, em ', color: t.faint },
+      { text: word.toLowerCase(), color: f.aspect.color, bold: true },
+      { text: ', a influência de ', color: t.faint },
+    ]), { text: '.', color: t.faint }],
+  };
+}
+
+const ASPECT_TEXT_TOP = 10.2;
+
+function aspectCardHeight(doc: jsPDF, t: Theme, chart: ChartData, f: FoundAspect, w: number): number {
+  const { a, b } = aspectBody(t, chart, f);
+  const tw = w - 8;
+  let y = flow(doc, a, 0, 0, tw, READ_SIZE, READ_LH, false);
+  y = flow(doc, b, 0, y, tw, READ_SIZE, READ_LH, false);
+  return ASPECT_TEXT_TOP + y - READ_LH + 3.6;
+}
+
+function aspectCard(doc: jsPDF, t: Theme, chart: ChartData, f: FoundAspect, y: number, h: number): void {
+  const x = M;
+  const w = W - 2 * M;
+  card(doc, t, x, y, w, h, f.aspect.color);
+  const lx = x + 4;
+  const top = y + 4.8;
+
+  // Referência discreta no topo: quem, onde e o aspecto técnico
+  let cx = lx;
+  cx += rich(doc, glyph(f.a), cx, top + 0.2, { size: 7.5, color: PLANET_COLORS[f.a] ?? t.text }) + 1;
+  cx += rich(doc, f.aspect.glyph, cx, top + 0.2, { size: 7.5, color: f.aspect.color }) + 1;
+  cx += rich(doc, glyph(f.b), cx, top + 0.2, { size: 7.5, color: PLANET_COLORS[f.b] ?? t.text }) + 2.5;
+  rich(doc, `${bodyRef(chart, f.a)}   recebe ${f.aspect.name.toLowerCase()} de   ${bodyRef(chart, f.b)}`, cx, top, { size: 6.5, color: t.faint, spacing: 0.1 });
+  const approx = isApproximate(f.orb, f.aspect.orb);
+  rich(doc, `orbe ${orbLabel(f.orb)}${approx ? ' · aproximado' : ''}`, x + w - 4, top, { size: 6.5, color: t.faint, align: 'right' });
+
+  const { a, b } = aspectBody(t, chart, f);
+  const tw = w - 8;
+  const ny = flow(doc, a, lx, y + ASPECT_TEXT_TOP, tw, READ_SIZE, READ_LH);
+  flow(doc, b, lx, ny, tw, READ_SIZE, READ_LH);
+}
+
+function briefReading(doc: jsPDF, t: Theme, input: ReportInput): void {
+  const { chart } = input;
+  let y = newPage(doc, t, input);
+  const fullW = W - 2 * M;
+
+  sectionTitle(doc, t, 'Leitura breve natal', M, y, fullW);
+  y = paragraph(doc,
+    'Leitura descritiva por palavras-chave: indica temas e qualidades presentes no mapa, sem caráter de previsão. ' +
+    `Considera a casa real: um corpo a até ${REAL_HOUSE_COMMON_ORB}° antes de uma cúspide, ou a até ${REAL_HOUSE_ANGULAR_ORB}° antes do ASC, IC, DSC ou MC, ` +
+    'é lido na casa seguinte (marcado com *).',
+    M, y + 6, fullW, 7.8, t.muted, 3.6) + 4;
+
+  /* Casas: 2 colunas × 6 linhas, altura pela casa de texto mais longo */
+  sectionTitle(doc, t, 'Energia das casas', M, y, fullW);
+  y += 4.5;
+  const gap = 4;
+  const cw = (fullW - gap) / 2;
+  let lines = 1;
+  for (let i = 0; i < 12; i++) {
+    lines = Math.max(lines, Math.round(flow(doc, houseSegs(t, chart, i), 0, 0, cw - 8, READ_SIZE, READ_LH, false) / READ_LH));
+  }
+  const ch = 9.6 + (lines - 1) * READ_LH + 3.4;
+  for (let i = 0; i < 12; i++) {
+    const col = i < 6 ? 0 : 1;
+    const row = i % 6;
+    houseCard(doc, t, chart, i, M + col * (cw + gap), y + row * (ch + 2.5), cw, ch);
+  }
+  y += 6 * (ch + 2.5) + 5;
+
+  /* Aspectos: o mais rápido recebe, o mais lento atua; agrupados pelo mais rápido, depois pelo mais exato */
+  const found = listAspects(chart.planets)
+    .map(orientBySpeed)
+    .sort((p, q) => speedRank(p.a) - speedRank(q.a) || speedRank(p.b) - speedRank(q.b) || p.orb - q.orb);
+
+  const agap = 2.8;
+  const first = found.length ? aspectCardHeight(doc, t, chart, found[0], fullW) : 10;
+  if (y + 10 + first > CONTENT_BOTTOM) y = newPage(doc, t, input);
+  sectionTitle(doc, t, 'Aspectos', M, y, fullW);
+  y += 4.5;
+  if (!found.length) {
+    rich(doc, 'Nenhum aspecto dentro das orbes.', M, y + 4, { size: 8, color: t.muted });
+    return;
+  }
+  for (const f of found) {
+    const ah = aspectCardHeight(doc, t, chart, f, fullW);
+    if (y + ah > CONTENT_BOTTOM) {
+      y = newPage(doc, t, input);
+      sectionTitle(doc, t, 'Aspectos (continuação)', M, y, fullW);
+      y += 4.5;
+    }
+    aspectCard(doc, t, chart, f, y, ah);
+    y += ah + agap;
+  }
+}
+
 export async function buildReport(input: ReportInput): Promise<jsPDF> {
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
   await registerFonts(doc);
@@ -512,7 +727,6 @@ export async function buildReport(input: ReportInput): Promise<jsPDF> {
   sectionTitle(doc, t, 'Posições', M, y, W - 2 * M);
   y = positionsTable(doc, t, chart, y + 6.5) + 6;
   anglesRow(doc, t, chart, y);
-  footer(doc, t, input, 1, 2);
 
   /* Página 2 */
   doc.addPage();
@@ -542,7 +756,14 @@ export async function buildReport(input: ReportInput): Promise<jsPDF> {
     hoursTable(doc, t, input.planetaryDay, y + 6);
   }
 
-  footer(doc, t, input, 2, 2);
+  /* Páginas seguintes: leitura breve natal */
+  briefReading(doc, t, input);
+
+  const pages = doc.getNumberOfPages();
+  for (let p = 1; p <= pages; p++) {
+    doc.setPage(p);
+    footer(doc, t, input, p, pages);
+  }
   return doc;
 }
 
