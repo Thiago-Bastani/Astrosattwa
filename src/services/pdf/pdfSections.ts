@@ -17,9 +17,9 @@ export const KINDS: readonly { id: ReadingKind; label: string }[] = [
 /** Na ordem em que entram no PDF. */
 export const REPORT_SECTIONS: readonly { id: ReportSection; label: string; hint: string }[] = [
   { id: 'vedic-natal',        label: 'Védico · natal',      hint: 'Lagna, regente, Lua, nakshatra e casas' },
-  { id: 'vedic-electional',   label: 'Védico · eletivo',    hint: 'vara, tithi, nakshatra e lagna do muhurta' },
+  { id: 'vedic-electional',   label: 'Védico · eletivo',    hint: 'vara, tithi, nakshatra, asta e lagna do muhurta' },
   { id: 'western-natal',      label: 'Ocidental · natal',   hint: 'mandala, aspectos e leitura breve' },
-  { id: 'western-electional', label: 'Ocidental · eletivo', hint: 'Lua, manzil e horas planetárias' },
+  { id: 'western-electional', label: 'Ocidental · eletivo', hint: 'Lua, retrogradação, manzil e horas' },
 ];
 
 export const ALL_SECTIONS: readonly ReportSection[] = REPORT_SECTIONS.map(s => s.id);

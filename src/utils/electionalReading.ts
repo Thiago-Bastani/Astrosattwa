@@ -1,22 +1,13 @@
 import type { ChartData } from '../types/astro';
 import type { PlanetaryDay } from './planetary';
-import { MANAZIL, NAKSHATRAS } from './lunarMansions';
+import type { NakshatraNature } from './vedicReading';
 
 /**
  * Leitura eletiva (do momento): muhurta védico e eleição ocidental.
- * Só dados e cálculos; o PDF compõe as frases. Versão breve, para avaliação.
+ * Só dados e cálculos; o PDF compõe as frases. Tudo no zodíaco escolhido no app.
  */
 
 const norm = (d: number) => ((d % 360) + 360) % 360;
-
-/** Longitudes nos dois zodíacos, qualquer que seja o do mapa. */
-export function zodiacLons(chart: ChartData, ayanamsa: number) {
-  const sid = chart.zodiacSystem === 'sidereal';
-  return {
-    tropical: (lon: number) => norm(sid ? lon + ayanamsa : lon),
-    sidereal: (lon: number) => norm(sid ? lon : lon - ayanamsa),
-  };
-}
 
 const WEEKDAY_RULERS = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
 
@@ -83,11 +74,10 @@ const MALEFICS = ['Sun', 'Mars', 'Saturn', 'NorthNode', 'SouthNode'];
 
 export interface MuhurtaCheck { rule: string; holds: boolean; detail: string }
 
-/** Regras clássicas do lagna do muhurta, por signo inteiro sideral. */
-export function muhurtaChecks(chart: ChartData, ayanamsa: number, pt: (name: string) => string): MuhurtaCheck[] {
-  const { sidereal } = zodiacLons(chart, ayanamsa);
-  const lagnaSign = Math.floor(sidereal(chart.ascendant) / 30);
-  const houseOf = (lon: number) => ((Math.floor(sidereal(lon) / 30) - lagnaSign + 12) % 12) + 1;
+/** Regras clássicas do lagna do muhurta, por signo inteiro. */
+export function muhurtaChecks(chart: ChartData, pt: (name: string) => string): MuhurtaCheck[] {
+  const lagnaSign = Math.floor(norm(chart.ascendant) / 30);
+  const houseOf = (lon: number) => ((Math.floor(norm(lon) / 30) - lagnaSign + 12) % 12) + 1;
   const grahas = chart.planets.filter(p => ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'NorthNode', 'SouthNode'].includes(p.name));
   const at = (names: string[]) => grahas.filter(p => names.includes(p.name)).map(p => ({ name: p.name, house: houseOf(p.longitude) }));
   const list = (xs: { name: string; house: number }[]) => xs.map(x => `${pt(x.name)} na ${x.house}ª`).join(', ');
@@ -123,16 +113,47 @@ export function muhurtaChecks(chart: ChartData, ayanamsa: number, pt: (name: str
   ];
 }
 
-export function siderealNakshatra(chart: ChartData, ayanamsa: number): number {
-  const moon = chart.planets.find(p => p.name === 'Moon');
-  const lon = zodiacLons(chart, ayanamsa).sidereal(moon?.longitude ?? 0);
-  return Math.floor(lon / (360 / 27)) % NAKSHATRAS.length;
-}
+/**
+ * Grupos de nakshatras no muhurta (Muhurta Chintamani, nakshatra prakarana): nome alternativo,
+ * dia da semana do mesmo grupo e obras indicadas.
+ */
+export const MUHURTA_NATURE: Record<NakshatraNature, { name: string; weekday: string; use: string }> = {
+  dhruva:  { name: 'dhruva ou sthira (fixo)', weekday: 'domingo',
+    use: 'fundações e construção de casas e cidades, semeadura e plantio, coroação, ritos de paz e tudo o que se quer permanente' },
+  chara:   { name: 'chara ou chala (móvel)', weekday: 'segunda-feira',
+    use: 'viagens, montar veículos e animais de montaria, jardins e o que deve mover-se' },
+  ugra:    { name: 'ugra ou krura (feroz, cruel)', weekday: 'terça-feira',
+    use: 'destruição, incêndio, veneno, armas, aprisionamento e ações contra inimigos' },
+  mishra:  { name: 'mishra ou sadharana (misto, comum)', weekday: 'quarta-feira',
+    use: 'trabalhos com fogo e obras de natureza mista' },
+  kshipra: { name: 'kshipra ou laghu (rápido, leve)', weekday: 'quinta-feira',
+    use: 'comércio e venda, prazeres, estudo e ensino, ornamentos e artes, medicina e viagens' },
+  mridu:   { name: 'mridu ou maitra (suave, amistoso)', weekday: 'sexta-feira',
+    use: 'canto e música, vestir roupas e ornamentos novos, amizades, festividades e ritos auspiciosos' },
+  tikshna: { name: 'tikshna ou daruna (agudo, terrível)', weekday: 'sábado',
+    use: 'ritos de abhichara, encantamentos, separações, ações violentas e a doma de animais' },
+};
+
+export type NakshatraFace = 'urdhva' | 'adho' | 'tiryak';
+
+/** Direção da "face" de cada nakshatra, na ordem de NAKSHATRAS. */
+export const NAKSHATRA_FACE: NakshatraFace[] = [
+  'tiryak', 'adho', 'adho', 'urdhva', 'tiryak', 'urdhva', 'tiryak', 'urdhva', 'adho',
+  'adho', 'adho', 'urdhva', 'tiryak', 'tiryak', 'tiryak', 'adho', 'tiryak', 'tiryak',
+  'adho', 'adho', 'urdhva', 'urdhva', 'urdhva', 'urdhva', 'adho', 'urdhva', 'tiryak',
+];
+
+export const FACE_TEXT: Record<NakshatraFace, { name: string; use: string }> = {
+  urdhva: { name: 'urdhvamukha (de face voltada para cima)', use: 'erguer construções, coroações, hastear bandeiras e plantar árvores' },
+  adho:   { name: 'adhomukha (de face voltada para baixo)', use: 'cavar poços, tanques e fundações, minerar e o que se faz sob o solo' },
+  tiryak: { name: 'tiryakmukha (de face voltada para os lados)', use: 'viagens, arar a terra, conduzir veículos e abrir caminhos' },
+};
 
 /* ── Ocidental: Lua ── */
 
-/** Dignidades essenciais da Lua (tropical). */
+/** Dignidades essenciais da Lua (por signo). */
 const MOON_DIGNITY: Record<number, string> = { 3: 'domicílio', 1: 'exaltação', 9: 'exílio', 7: 'queda' };
+export const moonDignity = (signIndex: number): string | null => MOON_DIGNITY[signIndex] ?? null;
 
 export const ASPECT_ANGLES: { angle: number; name: string }[] = [
   { angle: 0, name: 'conjunção' }, { angle: 60, name: 'sextil' }, { angle: 90, name: 'quadratura' },
@@ -142,13 +163,12 @@ export const ASPECT_ANGLES: { angle: number; name: string }[] = [
 export interface NextAspect { planet: string; aspect: string; distance: number }
 
 /**
- * Condição eletiva da Lua (tropical). O próximo aspecto é aproximado: considera os outros
+ * Condição eletiva da Lua. O próximo aspecto é aproximado: considera os outros
  * planetas parados, o que basta para saber se a Lua ainda aplica antes de mudar de signo.
  */
-export function westernMoon(chart: ChartData, ayanamsa: number) {
-  const { tropical } = zodiacLons(chart, ayanamsa);
+export function westernMoon(chart: ChartData) {
   const moonP = chart.planets.find(p => p.name === 'Moon');
-  const moon = tropical(moonP?.longitude ?? 0);
+  const moon = norm(moonP?.longitude ?? 0);
   const elong = norm(chart.moonPhase.angle);
   const fromSun = Math.min(elong, 360 - elong);
   const toSignEnd = 30 - (moon % 30);
@@ -156,7 +176,7 @@ export function westernMoon(chart: ChartData, ayanamsa: number) {
   let next: NextAspect | null = null;
   for (const p of chart.planets) {
     if (!['Sun', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn'].includes(p.name)) continue;
-    const pl = tropical(p.longitude);
+    const pl = norm(p.longitude);
     for (const a of ASPECT_ANGLES) {
       for (const target of a.angle === 0 || a.angle === 180 ? [pl + a.angle] : [pl + a.angle, pl - a.angle]) {
         const d = norm(target - moon);
@@ -176,7 +196,7 @@ export function westernMoon(chart: ChartData, ayanamsa: number) {
     voidOfCourse: !next,
     next,
     toSignEnd,
-    manzil: Math.floor(moon / (360 / 28)) % MANAZIL.length,
+    manzil: chart.moonPhase.arabicMansion.number - 1,
   };
 }
 
@@ -193,3 +213,32 @@ export const HOUR_USE: Record<string, string> = {
 
 export const BENEFIC_WESTERN = ['Jupiter', 'Venus'];
 export const MALEFIC_WESTERN = ['Mars', 'Saturn'];
+
+/* ── Retrogradação (ocidental) ── */
+
+export const TRADITIONAL_RETRO = ['Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn'];
+
+/** Regentes tradicionais dos signos (Áries → Peixes). */
+export const SIGN_RULERS = ['Mars', 'Venus', 'Mercury', 'Moon', 'Sun', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Saturn', 'Jupiter'];
+
+export function retrogrades(chart: ChartData): string[] {
+  return TRADITIONAL_RETRO.filter(n => chart.planets.find(p => p.name === n)?.isRetrograde);
+}
+
+/* ── Asta: combustão (védico) ── */
+
+/** Distância ao Sol abaixo da qual o graha fica asta (Surya Siddhanta); [direto, retrógrado]. */
+export const COMBUST_ORB: Record<string, [number, number]> = {
+  Moon: [12, 12], Mars: [17, 17], Mercury: [14, 12], Jupiter: [11, 11], Venus: [10, 8], Saturn: [15, 15],
+};
+
+export function combustGrahas(chart: ChartData): string[] {
+  const sun = chart.planets.find(p => p.name === 'Sun');
+  if (!sun) return [];
+  return Object.keys(COMBUST_ORB).filter(n => {
+    const p = chart.planets.find(q => q.name === n);
+    if (!p) return false;
+    const d = Math.abs(norm(p.longitude - sun.longitude + 180) - 180);
+    return d < COMBUST_ORB[n][p.isRetrograde ? 1 : 0];
+  });
+}

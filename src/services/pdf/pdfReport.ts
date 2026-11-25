@@ -23,12 +23,13 @@ import NakshatraSymbol from '../../components/NakshatraSymbol';
 import { MANAZIL, NAKSHATRAS, NAKSHATRA_DATA } from '../../utils/lunarMansions';
 import {
   BENEFIC_WESTERN, HOUR_USE, MALEFIC_WESTERN, TITHI_GROUP_TEXT, VARA_INFO,
-  muhurtaChecks, siderealNakshatra, tithiOf, varaOf, westernMoon, zodiacLons,
+  FACE_TEXT, MUHURTA_NATURE, NAKSHATRA_FACE, moonDignity, varaOf,
 } from '../../utils/electionalReading';
 import {
   BHAVA_TEXT, DASHA_YEARS, GANA_TEXT, GRAHA_INFO, GRAHA_NAMES, HOUSE_GROUPS, HOUSE_TYPE_TEXT, LAGNA_TEXT, NAKSHATRA_INFO, NATURE_TEXT, SIGN_INFO, VEDIC_RULERS,
   dignityText, grahaDignity, grahasInHouse, houseSignIndex, nakshatraPada, nakshatraSpan, padaNavamsha, wholeSignHouse,
 } from '../../utils/vedicReading';
+import { electionalDay, type ElectionalDay, type Period } from '../../utils/electionalDay';
 import { registerFonts, setRunFont, splitRuns } from './pdfFonts';
 import { chartToSvg } from './pdfSvg';
 import { ALL_SECTIONS, REPORT_SECTIONS, type ReportSection } from './pdfSections';
@@ -183,6 +184,8 @@ const hhmm = (d: Date) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 const ddmmyyyy = (d: Date) => `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
 const glyph = (name: string) => PLANET_GLYPHS[name] ?? '';
 const nameOf = (name: string) => PLANET_NAMES_PT[name] ?? name;
+/** "do Sol", "da Lua", "de Mercúrio" */
+const ofName = (name: string) => (name === 'Sun' ? 'do ' : name === 'Moon' ? 'da ' : 'de ') + nameOf(name);
 
 function lonLabel(lon: number): string {
   const { sign, degree, minute } = getZodiacSign(lon);
@@ -232,9 +235,9 @@ type Part = 'cover' | ReportSection;
 
 const PART_FOOTER: Record<ReportSection, string> = {
   'vedic-natal': 'leitura védica · casas por signo inteiro',
-  'vedic-electional': 'muhurta · sideral Lahiri, casas por signo inteiro',
+  'vedic-electional': 'muhurta · casas por signo inteiro',
   'western-natal': 'leitura ocidental · casas iguais a partir do ASC',
-  'western-electional': 'eleição ocidental · Lua e manazil no zodíaco tropical',
+  'western-electional': 'eleição ocidental',
 };
 
 function footer(doc: jsPDF, t: Theme, input: ReportInput, page: number, pages: number, part: Part): void {
@@ -797,7 +800,11 @@ interface Story {
   right?: Seg[];
   paras: Seg[][];
   edge?: string;
+  /** Espaço (mm) aberto no título depois do segmento de índice `after`, para um desenho. */
+  titleGap?: { after: number; width: number };
 }
+
+const STORY_TITLE_SIZE = 10.5;
 
 const PARA_GAP = 3.2 + V_LH - 0.4; // da linha de base anterior à primeira linha do parágrafo
 
@@ -812,10 +819,16 @@ function storyHeight(doc: jsPDF, st: Story, w: number): number {
   return cy + 1.5;
 }
 
-function drawSegs(doc: jsPDF, segs: Seg[], x: number, y: number, size: number, align: 'left' | 'right' = 'left'): void {
-  const total = segs.reduce((s, g) => s + textWidth(doc, g.text, size, g.bold) + (g.bold ? BOLD_SLACK : 0), 0);
-  let cx = align === 'right' ? x - total : x;
-  for (const g of segs) cx += rich(doc, g.text, cx, y, { size, color: g.color, bold: g.bold }) + (g.bold ? BOLD_SLACK : 0);
+function segsWidth(doc: jsPDF, segs: Seg[], size: number): number {
+  return segs.reduce((s, g) => s + textWidth(doc, g.text, size, g.bold) + (g.bold ? BOLD_SLACK : 0), 0);
+}
+
+function drawSegs(doc: jsPDF, segs: Seg[], x: number, y: number, size: number, align: 'left' | 'right' = 'left', gap?: { after: number; width: number }): void {
+  let cx = align === 'right' ? x - segsWidth(doc, segs, size) - (gap?.width ?? 0) : x;
+  segs.forEach((g, i) => {
+    cx += rich(doc, g.text, cx, y, { size, color: g.color, bold: g.bold }) + (g.bold ? BOLD_SLACK : 0);
+    if (gap && i === gap.after) cx += gap.width;
+  });
 }
 
 function drawStory(doc: jsPDF, t: Theme, st: Story, y: number): void {
@@ -826,17 +839,23 @@ function drawStory(doc: jsPDF, t: Theme, st: Story, y: number): void {
     sectionTitle(doc, t, st.kicker, x, cy, w);
     cy += STORY_TITLE;
   }
-  drawSegs(doc, st.title, x, cy, 10.5);
+  drawSegs(doc, st.title, x, cy, STORY_TITLE_SIZE, 'left', st.titleGap);
   if (st.right) drawSegs(doc, st.right, x + w, cy, 9, 'right');
   for (const p of st.paras) cy = flow(doc, p, x, cy + PARA_GAP, w, V_SIZE, V_LH) - V_LH;
 }
 
 /** Coloca um bloco, abrindo página nova se não couber. Devolve o y seguinte. */
-function placeStory(doc: jsPDF, t: Theme, input: ReportInput, st: Story, y: number): number {
+function placeStory(doc: jsPDF, t: Theme, input: ReportInput, st: Story, y: number, gap = STORY_GAP): number {
+  const { top, next } = storySlot(doc, t, input, st, y, gap);
+  drawStory(doc, t, st, top);
+  return next;
+}
+
+/** Onde o bloco cabe (abre página se preciso): topo e y seguinte. */
+function storySlot(doc: jsPDF, t: Theme, input: ReportInput, st: Story, y: number, gap = STORY_GAP): { top: number; next: number } {
   const h = storyHeight(doc, st, W - 2 * M);
   if (y + h > CONTENT_BOTTOM) y = newPage(doc, t, input);
-  drawStory(doc, t, st, y);
-  return y + h + STORY_GAP;
+  return { top: y, next: y + h + gap };
 }
 
 const pName = (name: string) => `${glyph(name)} ${nameOf(name)}`;
@@ -1150,18 +1169,38 @@ async function westernReading(doc: jsPDF, t: Theme, input: ReportInput): Promise
   aspectList(doc, t, chart, y + 6);
 }
 
-/* ── Eletivo védico: muhurta (vara, tithi, nakshatra, lagna do momento) ── */
+/* ── Eletivo: o dia inteiro ── */
+
+const dayCache = new WeakMap<ReportInput, ElectionalDay>();
+
+/** Períodos do dia eletivo (calculados uma vez por relatório). */
+function dayOf(input: ReportInput): ElectionalDay {
+  let d = dayCache.get(input);
+  if (!d) {
+    d = electionalDay(input.date, input.location, input.chart.zodiacSystem, input.planetaryDay, nameOf);
+    dayCache.set(input, d);
+  }
+  return d;
+}
+
+const span = (p: { start: Date; end: Date }) => `${hhmm(p.start)}–${hhmm(p.end)}`;
+const wholeDay = (d: ElectionalDay, list: Period<unknown>[]) => list.length === 1 && list[0].start.getTime() === d.start.getTime() && list[0].end.getTime() === d.end.getTime();
+
+function dayNote(d: ElectionalDay, input: ReportInput, what: string): string {
+  return `${what} correspondem às ${hhmm(input.date)}; os períodos abaixo cobrem o dia, do nascer do sol (${hhmm(d.start)}) ao seguinte (${hhmm(d.end)}).`;
+}
+
+/* ── Eletivo védico: muhurta ── */
 
 async function vedicElectional(doc: jsPDF, t: Theme, input: ReportInput): Promise<void> {
-  const { chart } = input;
-  const ay = calculateLahiriAyanamsa(input.date);
-  const { sidereal } = zodiacLons(chart, ay);
+  const d = dayOf(input);
   doc.addPage();
   paintPage(doc, t);
   let y = header(doc, t, input, false, 'MUHURTA · ELEIÇÃO VÉDICA') + 7;
   y = paragraph(doc,
     'O muhurta escolhe o momento de um começo pelos cinco membros do panchanga e pelo mapa do próprio instante. ' +
-    'Resumo dos critérios mais usados; não substitui o exame do mapa natal de quem age (tara bala, chandra bala).',
+    'Resumo dos critérios mais usados; não substitui o exame do mapa natal de quem age (tara bala, chandra bala). ' +
+    dayNote(d, input, 'Os gráficos da capa'),
     M, y, W - 2 * M, 8, t.muted, 3.6) + 4;
 
   // Vara
@@ -1173,139 +1212,233 @@ async function vedicElectional(doc: jsPDF, t: Theme, input: ReportInput): Promis
     paras: [
       [N(`O dia védico corre de um nascer do sol ao seguinte e pertence ao graha que o nomeia. A tradição do muhurta reserva o dia de ${nameOf(vara.ruler)} a ${vi.use}.`, t.text)],
       ...(vara.rahuKala ? [[
-        N('Rahu kala, a oitava parte do dia evitada para inícios: ', t.faint),
-        B(`${hhmm(vara.rahuKala.start)}–${hhmm(vara.rahuKala.end)}`, t.muted), N('.', t.faint),
+        N('Rahu kala, a oitava parte do dia evitada para inícios: ', t.text),
+        B(span(vara.rahuKala), t.text),
       ]] : []),
     ],
-    edge: PLANET_COLORS[vara.ruler],
   }, y);
 
-  // Tithi
-  const ti = tithiOf(chart.moonPhase.angle);
-  const tg = TITHI_GROUP_TEXT[ti.group];
+  // Tithis do dia
   y = placeStory(doc, t, input, {
     kicker: 'TITHI · DIA LUNAR',
-    title: [B(ti.name, t.text), N(` · ${ti.n}ª de ${ti.shukla ? 'Shukla' : 'Krishna'} paksha`, t.muted)],
-    right: [N(`${Math.round(ti.progress * 100)}% decorrido`, t.faint)],
+    title: [B(d.tithis.map(p => p.value.name).join(' → '), t.text)],
     paras: [
-      [N(`O tithi mede cada 12° de afastamento entre a Lua e o Sol; são trinta no mês lunar. ${ti.shukla
-        ? 'Shukla paksha, a quinzena clara, é a preferida para inícios.'
-        : 'Krishna paksha, a quinzena escura, é tradicionalmente reservada a conclusões, mais que a inícios.'}`, t.text)],
-      [
-        N('Pertence ao grupo ', t.text), B(`${tg.name}`, t.text), N(` ("${tg.meaning}"), associado a ${tg.use}.`, t.text),
-        ...(ti.name === 'Amavasya' ? [N(' Amavasya, a lua nova, é evitada para toda obra auspiciosa.', t.text)] : []),
-      ],
+      [N('O tithi mede cada 12° de afastamento entre a Lua e o Sol; são trinta no mês lunar. Shukla paksha, a quinzena clara, é a preferida para inícios; Krishna paksha, a quinzena escura, é tradicionalmente reservada a conclusões.', t.text)],
+      ...d.tithis.map(p => {
+        const ti = p.value;
+        const tg = TITHI_GROUP_TEXT[ti.group];
+        return [
+          B(`${span(p)} · ${ti.name},`, t.text),
+          N(` ${ti.n}ª de ${ti.shukla ? 'Shukla' : 'Krishna'} paksha. Grupo `, t.text), B(tg.name, t.text),
+          N(` ("${tg.meaning}"): ${tg.use}.`, t.text),
+          ...(ti.name === 'Amavasya' ? [N(' Amavasya, a lua nova, é evitada para toda obra auspiciosa.', t.text)] : []),
+        ];
+      }),
     ],
-    edge: PLANET_COLORS.Moon,
   }, y);
 
-  // Nakshatra (sideral)
-  const ni = siderealNakshatra(chart, ay);
-  const info = NAKSHATRA_INFO[ni];
-  const nd = NAKSHATRA_DATA[ni];
+  // Nakshatras do dia, cada um com o símbolo ao lado do nome
+  for (const [i, p] of d.nakshatras.entries()) {
+    y = await nakshatraElection(doc, t, input, p.value, i === 0, wholeDay(d, d.nakshatras) ? 'o dia todo' : span(p), y);
+  }
+
+  // Asta: grahas combustos ao longo do dia
+  const combustLabel = (names: string[]) => {
+    if (!names.length) return 'nenhum graha combusto';
+    if (names.length === 1) return `${nameOf(names[0])} ${names[0] === 'Moon' ? 'combusta' : 'combusto'}`;
+    return `${listPt(names.map(nameOf))} combustos`;
+  };
   y = placeStory(doc, t, input, {
-    kicker: 'NAKSHATRA DA LUA',
-    title: [B(NAKSHATRAS[ni], t.text), N(` (${info.meaning}) · devata ${nd.devata}`, t.muted)],
-    right: [N(`regente ${nd.lord}`, t.faint)],
-    paras: [[N(`O nakshatra ocupado pela Lua é o membro mais pesado do muhurta. ${NATURE_TEXT[info.nature]}`, t.text)]],
-    edge: PLANET_COLORS.Moon,
+    kicker: 'ASTA · COMBUSTÃO',
+    title: [B('Grahas combustos', t.text)],
+    paras: [
+      [N('Um graha muito próximo do Sol fica asta ("posto", encoberto pelos raios) e perde a força para dar resultados. Limites a partir do Sol, segundo o Surya Siddhanta: Lua 12°, Marte 17°, Mercúrio 14° (12° quando retrógrado), Júpiter 11°, Vênus 10° (8° quando retrógrado), Saturno 15°.', t.text)],
+      ...d.combust.map(p => [
+        B(`${wholeDay(d, d.combust) ? 'O dia todo' : span(p)}: `, t.text),
+        N(`${combustLabel(p.value)}.`, t.text),
+      ]),
+      [N('Com Júpiter ou Vênus asta, os textos de muhurta vetam casamento, upanayana, entrada em casa nova e os demais samskaras.' +
+        (d.combust.some(p => p.value.includes('Moon')) ? ' A Lua fica asta durante Amavasya e Shukla Pratipada, os dois tithis a menos de 12° do Sol.' : ''), t.text)],
+    ],
   }, y);
 
-  // Lagna do muhurta
-  const lagna = signOf(sidereal(chart.ascendant));
-  const checks = muhurtaChecks(chart, ay, nameOf);
-  placeStory(doc, t, input, {
+  // Lagna ao longo do dia
+  const rules = d.lagnas[0].value.checks.map(c => c.rule);
+  y = placeStory(doc, t, input, {
     kicker: 'LAGNA DO MUHURTA',
-    title: [B(`Lagna em ${lagna.glyph} ${signName(lagna.name)}`, t.text), N(` (${SIGN_INFO[lagna.name].skt})`, t.muted)],
+    title: [B('Lagna ao longo do dia', t.text)],
     paras: [
-      [N('O instante é julgado como um mapa, com casas por signo inteiro a partir do lagna. Regras mais citadas:', t.text)],
-      ...checks.map(c => [
-        B(`${c.rule}: `, t.text),
-        B(c.holds ? 'atendida' : 'não atendida', c.holds ? '#27ae60' : '#c0392b'),
-        N(` (${c.detail}).`, t.muted),
-      ]),
+      [N('O instante é julgado como um mapa, com casas por signo inteiro a partir do lagna; o lagna muda de signo cerca de doze vezes ao dia, e com ele as casas de todos os grahas. Regras mais citadas:', t.text)],
+      ...rules.map((r, i) => [B(`${i + 1}. `, t.text), N(`${r}.`, t.text)]),
     ],
-    edge: lagna.color,
-  }, y);
+  }, y, 3);
+  for (const p of d.lagnas) {
+    const sg = ZODIAC_SIGNS[p.value.lagnaSign];
+    const para: Seg[] = [];
+    p.value.checks.forEach((c, i) => {
+      para.push(B(`${i + 1} `, t.text), B(c.holds ? 'atendida' : 'não atendida', c.holds ? '#27ae60' : '#c0392b'));
+      para.push(N(` (${c.detail})${i < p.value.checks.length - 1 ? '; ' : '.'}`, t.muted));
+    });
+    y = placeStory(doc, t, input, {
+      title: [B(span(p), t.text), N(' · Lagna em ', t.muted), B(`${sg.glyph} ${signName(sg.name)}`, t.text), N(` (${SIGN_INFO[sg.name].skt})`, t.muted)],
+      paras: [para],
+    }, y, 3);
+  }
 }
 
-/* ── Eletivo ocidental: Lua, manzil e horas planetárias ── */
+async function nakshatraElection(doc: jsPDF, t: Theme, input: ReportInput, ni: number, withKicker: boolean, when: string, y: number): Promise<number> {
+  const info = NAKSHATRA_INFO[ni];
+  const nd = NAKSHATRA_DATA[ni];
+  const mn = MUHURTA_NATURE[info.nature];
+  const face = FACE_TEXT[NAKSHATRA_FACE[ni]];
+  const peers = NAKSHATRAS.filter((_, i) => i !== ni && NAKSHATRA_INFO[i].nature === info.nature);
+  const sym = 6.4;
+  const st: Story = {
+    kicker: withKicker ? 'NAKSHATRA DA LUA' : undefined,
+    title: [B(NAKSHATRAS[ni], t.text), N(` (${info.meaning})`, t.muted), N(`· devata ${nd.devata} · regente ${nd.lord}`, t.muted)],
+    titleGap: { after: 1, width: sym + 3 },
+    right: [N(when, t.faint)],
+    paras: [
+      [
+        N('No muhurta, pertence ao grupo ', t.text), B(mn.name, t.text),
+        N(`${peers.length ? `, com ${listPt(peers)}` : ''}, ao qual corresponde o dia de ${mn.weekday}. O Muhurta Chintamani reserva a esse grupo ${mn.use}.`, t.text),
+      ],
+      [N('Pela direção da face, é ', t.text), B(face.name, t.text), N(`, próprio para ${face.use}.`, t.text)],
+    ],
+  };
+  const slot = storySlot(doc, t, input, st, y);
+  drawStory(doc, t, st, slot.top);
+  const titleY = slot.top + STORY_TOP + (st.kicker ? STORY_TITLE : 0);
+  const symX = M + segsWidth(doc, st.title.slice(0, 2), STORY_TITLE_SIZE) + 1.5;
+  await drawSvg(doc, React.createElement(NakshatraSymbol, {
+    index: ni, color: t.highlight, bg: t.bg, ring: blend(t.highlight, t.bg, 0.55),
+  }), t, symX, titleY - sym / 2 - 1.3, sym, sym);
+  return slot.next;
+}
+
+/* ── Eletivo ocidental: Lua, manazil e horas planetárias ── */
+
+const FEMININE_ASPECTS = ['conjunção', 'quadratura', 'oposição'];
 
 async function westernElectional(doc: jsPDF, t: Theme, input: ReportInput): Promise<void> {
-  const { chart } = input;
-  const ay = calculateLahiriAyanamsa(input.date);
+  const d = dayOf(input);
   doc.addPage();
   paintPage(doc, t);
   let y = header(doc, t, input, false, 'ELEIÇÃO OCIDENTAL') + 5;
-  y = statusCards(doc, t, input, y) + 7;
+  y = statusCards(doc, t, input, y) + 5;
+  y = paragraph(doc, dayNote(d, input, 'Os cartões acima'), M, y, W - 2 * M, 8, t.muted, 3.6) + 4;
 
-  // Lua
-  const m = westernMoon(chart, ay);
-  const sign = ZODIAC_SIGNS[m.signIndex];
-  const moonParas: Seg[][] = [
-    [N('Na eleição ocidental a Lua é a significadora geral de todo começo: a sua condição pesa sobre qualquer escolha, qualquer que seja o assunto. ' + (m.waxing
-      ? 'Está crescente, afastando-se do Sol, e a tradição a prefere assim para o que deve crescer e tornar-se visível.'
-      : 'Está minguante, aproximando-se do Sol, e a tradição a reserva para o que deve diminuir, concluir-se ou permanecer oculto.'), t.text)],
+  // Lua: signos, condição e aspectos ao longo do dia
+  const signTitle: Seg[] = [B(`${glyph('Moon')} Lua em `, t.text)];
+  d.moonSigns.forEach((p, i) => {
+    const sg = ZODIAC_SIGNS[p.value];
+    const dig = moonDignity(p.value);
+    if (i) signTitle.push(N(` → ${hhmm(p.start)} `, t.muted));
+    signTitle.push(B(`${sg.glyph} ${signName(sg.name)}`, t.text));
+    if (dig) signTitle.push(N(` (${dig})`, t.muted));
+  });
+
+  const paras: Seg[][] = [
+    [N('Na eleição ocidental a Lua é a significadora geral de todo começo. A tradição prefere a Lua crescente para o que deve crescer e tornar-se visível, e reserva a minguante para o que deve diminuir, concluir-se ou permanecer oculto.', t.text)],
   ];
-  const flaws: string[] = [];
-  if (m.sunState === 'combusta') flaws.push('a menos de 8°30\' do Sol, está combusta, condição que os autores mandam evitar');
-  if (m.sunState === 'sob os raios') flaws.push('a menos de 17° do Sol, está sob os raios, condição enfraquecida');
-  if (m.viaCombusta) flaws.push('atravessa a via combusta (15° de Libra a 15° de Escorpião), trecho tradicionalmente evitado');
-  if (flaws.length) moonParas.push([N(`${flaws.join('; ')}.`.replace(/^./, c => c.toUpperCase()), t.text)]);
-  if (m.next) {
-    const kind = BENEFIC_WESTERN.includes(m.next.planet)
-      ? ' Aplicar a um benéfico é o testemunho preferido.'
-      : MALEFIC_WESTERN.includes(m.next.planet)
-        ? ' Aplicar a um maléfico é testemunho de obstáculo, menos grave por sextil ou trígono.'
-        : '';
-    moonParas.push([
-      N('Antes de deixar o signo, o próximo aspecto que perfaz é ', t.text),
-      B(`${m.next.aspect} a ${nameOf(m.next.planet)}`, t.text),
-      N(`, em cerca de ${degMin(m.next.distance)}.${kind}`, t.text),
-    ]);
-  } else {
-    moonParas.push([N(`Não perfaz aspecto com os planetas tradicionais antes de deixar o signo (faltam ${degMin(m.toSignEnd)}): está `, t.text),
-      B('fora de curso', t.text), N(', e a tradição diz que o que então se inicia não chega a termo.', t.text)]);
+  for (const p of d.moonStates) {
+    const s = p.value;
+    const notes = [s.waxing ? 'crescente' : 'minguante', s.sunState, s.viaCombusta ? 'na via combusta' : null].filter(Boolean);
+    paras.push([B(`${wholeDay(d, d.moonStates) ? 'O dia todo' : span(p)}: `, t.text), N(`${notes.join(', ')}.`, t.text)]);
   }
-  y = placeStory(doc, t, input, {
-    kicker: 'A LUA · SIGNIFICADORA GERAL',
-    title: [B(`${glyph('Moon')} Lua em ${sign.glyph} ${signName(sign.name)} ${degMin(m.lon % 30)}`, t.text),
-      ...(m.dignity ? [N(` · ${m.dignity}`, t.muted)] : [])],
-    right: [N('zodíaco tropical', t.faint)],
-    paras: moonParas,
-    edge: PLANET_COLORS.Moon,
-  }, y);
+  const anyBeams = d.moonStates.some(p => p.value.sunState);
+  const anyVia = d.moonStates.some(p => p.value.viaCombusta);
+  if (anyBeams || anyVia) {
+    paras.push([N([
+      anyBeams ? 'Combusta, a menos de 8°30\' do Sol, é condição que os autores mandam evitar; sob os raios, a menos de 17°, condição enfraquecida.' : '',
+      anyVia ? 'A via combusta, de 15° de Libra a 15° de Escorpião, é trecho tradicionalmente evitado.' : '',
+    ].filter(Boolean).join(' '), t.text)]);
+  }
 
-  // Manzil (tropical, a partir de 0° de Áries)
-  const z = MANAZIL[m.manzil];
-  y = placeStory(doc, t, input, {
-    kicker: 'MANZIL · MANSÃO LUNAR',
-    title: [N(`${m.manzil + 1}ª `, t.faint), B(z.name, t.text), N(` · ${z.meaning}`, t.muted)],
-    paras: [
-      [N('As vinte e oito mansões dividem o percurso mensal da Lua a partir de 0° de Áries; o Picatrix e Agrippa (De Occulta Philosophia II, 33) atribuem a cada uma as operações que favorece ou impede.', t.text)],
-      [B('Uso eletivo: ', t.text), N(z.election, t.text)],
-    ],
-    edge: PLANET_COLORS.Moon,
-  }, y);
+  paras.push([N('Aspectos que a Lua aplica antes de deixar o signo, com os planetas tradicionais:', t.text)]);
+  for (const p of d.moonAspects) {
+    const a = p.value;
+    const lead = B(`${span(p)}: `, t.text);
+    if (!a) { paras.push([lead, B('fora de curso.', t.text)]); continue; }
+    const fem = FEMININE_ASPECTS.includes(a.aspect);
+    const ends = p.end.getTime() < d.end.getTime();
+    const kind = BENEFIC_WESTERN.includes(a.planet) ? ' (benéfico)' : MALEFIC_WESTERN.includes(a.planet) ? ' (maléfico)' : '';
+    paras.push([
+      lead, N(`aplica ${fem ? 'à' : 'ao'} `, t.text), B(`${a.aspect} ${ofName(a.planet)}`, t.text),
+      N(`${kind}${ends ? `, ${fem ? 'exata' : 'exato'} às ${hhmm(p.end)}` : ', que se completa depois do fim do dia'}.`, t.text),
+    ]);
+  }
+  const hasVoid = d.moonAspects.some(p => !p.value);
+  paras.push([N('Aplicar a um benéfico é o testemunho preferido; a um maléfico, testemunho de obstáculo, menos grave por sextil ou trígono.' +
+    (hasVoid ? ' Da Lua fora de curso, a tradição diz que o que então se inicia não chega a termo.' : ''), t.text)]);
 
-  // Hora planetária
-  const day = input.planetaryDay;
-  const hour = day?.current ?? null;
-  if (hour && day) {
+  y = placeStory(doc, t, input, { kicker: 'A LUA · SIGNIFICADORA GERAL', title: signTitle, paras }, y);
+
+  // Retrogradação e regente do ascendente
+  const retroParas: Seg[][] = [
+    [N('Na eleição, os autores mandam evitar significadores retrógrados, em primeiro lugar o regente do ascendente e o regente da casa do assunto (Bonatti, Lilly). O Sol e a Lua nunca retrogradam; entre os planetas tradicionais, podem retrogradar Mercúrio, Vênus, Marte, Júpiter e Saturno.', t.text)],
+  ];
+  d.retrogrades.forEach((p, i) => {
+    const names = p.value;
+    const label = names.length ? `${listPt(names.map(nameOf))} ${names.length > 1 ? 'retrógrados' : 'retrógrado'}` : 'nenhum planeta tradicional retrógrado';
+    const para: Seg[] = [B(`${wholeDay(d, d.retrogrades) ? 'O dia todo' : span(p)}: `, t.text), N(`${label}.`, t.text)];
+    const nxt = d.retrogrades[i + 1];
+    if (nxt) {
+      const turnedRetro = nxt.value.filter(n => !names.includes(n));
+      const turnedDirect = names.filter(n => !nxt.value.includes(n));
+      const notes = [
+        ...turnedRetro.map(n => `${nameOf(n)} estaciona e passa a retrógrado`),
+        ...turnedDirect.map(n => `${nameOf(n)} estaciona e retoma o movimento direto`),
+      ];
+      if (notes.length) para.push(N(` Às ${hhmm(p.end)}, ${notes.join('; ')}.`, t.text));
+    }
+    retroParas.push(para);
+  });
+  retroParas.push([N('Regente do ascendente ao longo do dia:', t.text)]);
+  for (const p of d.ascRulers) {
+    const sg = ZODIAC_SIGNS[p.value.sign];
+    retroParas.push([
+      B(`${span(p)}: `, t.text), N(`ascendente em ${sg.glyph} ${signName(sg.name)}, regido por `, t.text),
+      B(`${glyph(p.value.ruler)} ${nameOf(p.value.ruler)}${p.value.retro ? ',' : '.'}`, t.text),
+      ...(p.value.retro ? [B(' retrógrado.', '#c0392b')] : []),
+    ]);
+  }
+  y = placeStory(doc, t, input, { kicker: 'RETROGRADAÇÃO', title: [B('Planetas retrógrados e regente do ascendente', t.text)], paras: retroParas }, y);
+
+  // Manazil do dia
+  for (const [i, p] of d.manazil.entries()) {
+    const z = MANAZIL[p.value];
     y = placeStory(doc, t, input, {
-      kicker: 'HORA PLANETÁRIA',
-      title: [B(`${glyph(hour.ruler)} Hora de ${nameOf(hour.ruler)}`, t.text), N(` · ${hhmm(hour.start)}–${hhmm(hour.end)}`, t.muted)],
-      right: [N(`dia de ${nameOf(day.ruler)}`, t.faint)],
-      paras: [[N(`O dia e a noite dividem-se cada um em doze horas desiguais, regidas na ordem caldaica a partir do regente do dia. A hora de ${nameOf(hour.ruler)} é tradicionalmente indicada para ${HOUR_USE[hour.ruler]}.`, t.text)]],
-      edge: PLANET_COLORS[hour.ruler],
+      kicker: i === 0 ? 'MANZIL · MANSÃO LUNAR' : undefined,
+      title: [N(`${p.value + 1}ª `, t.faint), B(z.name, t.text), N(` · ${z.meaning}`, t.muted)],
+      right: [N(wholeDay(d, d.manazil) ? 'o dia todo' : span(p), t.faint)],
+      paras: [
+        ...(i === 0 ? [[N('As vinte e oito mansões dividem o percurso mensal da Lua a partir de 0° de Áries; o Picatrix e Agrippa (De Occulta Philosophia II, 33) atribuem a cada uma as operações que favorece ou impede.', t.text)]] : []),
+        [B('Uso eletivo: ', t.text), N(z.election, t.text)],
+      ],
     }, y);
   }
 
+  // Horas planetárias, por planeta
+  const day = input.planetaryDay;
   if (!day) return;
+  const CHALDEAN = ['Saturn', 'Jupiter', 'Mars', 'Sun', 'Venus', 'Mercury', 'Moon'];
+  y = placeStory(doc, t, input, {
+    kicker: 'HORAS PLANETÁRIAS',
+    title: [B(`Dia ${ofName(day.ruler)}`, t.text)],
+    paras: [
+      [N('O dia e a noite dividem-se cada um em doze horas desiguais, regidas na ordem caldaica a partir do regente do dia.', t.text)],
+      ...CHALDEAN.map(pl => [
+        B(`${glyph(pl)} ${nameOf(pl)}: `, t.text),
+        N(`${day.hours.filter(h => h.ruler === pl).map(h => span(h)).join(', ')}. `, t.muted),
+        N(`${cap(HOUR_USE[pl])}.`, t.text),
+      ]),
+    ],
+  }, y);
+
   const chartW = 92;
   const need = 8 + chartW + 6 + 64;
   if (y + need > CONTENT_BOTTOM) y = newPage(doc, t, input);
-  else y += 3;
   sectionTitle(doc, t, `Horas planetárias · dia de ${WEEKDAY_NAMES_PT[day.weekday]} ${glyph(day.ruler)}`, M, y, W - 2 * M);
   y += 5;
   await drawSvg(doc, React.createElement(PlanetaryHoursChart, { day, date: input.date }), t, (W - chartW) / 2, y, chartW, chartW);
