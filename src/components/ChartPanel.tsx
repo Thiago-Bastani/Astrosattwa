@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { IonIcon, IonSpinner, useIonAlert } from '@ionic/react';
+import { IonIcon, IonSpinner } from '@ionic/react';
 import { apertureOutline, diamondOutline, documentTextOutline, gridOutline, listOutline, timeOutline } from 'ionicons/icons';
 import type { ChartData, GeoLocation } from '../types/astro';
 import type { PlanetaryDay } from '../utils/planetary';
@@ -9,6 +9,8 @@ import VedicChart from './VedicChart';
 import AspectGrid from './AspectGrid';
 import PlanetaryHoursChart from './PlanetaryHoursChart';
 import SkyHistoryModal from './SkyHistoryModal';
+import PdfExportModal from './PdfExportModal';
+import type { ReportSection } from '../services/pdf/pdfSections';
 import './ChartPanel.css';
 
 interface ChartPanelProps {
@@ -33,22 +35,20 @@ const VIEWS = [
 
 type ViewId = typeof VIEWS[number]['id'];
 
-const PDF_NAME_KEY = 'astrosattwa.pdfName';
-
 const ChartPanel: React.FC<ChartPanelProps> = ({ chart, date, planetaryDay, location, storageKey }) => {
   const [view, setView] = usePersistentState<ViewId>(storageKey, 'mandala');
   const active = VIEWS.some(v => v.id === view) ? view : 'mandala';
   const [exporting, setExporting] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [presentAlert] = useIonAlert();
+  const [exportOpen, setExportOpen] = useState(false);
 
   // O PDF é montado a partir dos dados (não da tela); o módulo só carrega ao tocar
-  const generate = async (name: string) => {
+  const generate = async (name: string, sections: ReportSection[]) => {
     if (exporting) return;
     setExporting(true);
     try {
       const { exportReport } = await import('../services/pdf/pdfReport');
-      await exportReport({ chart, date, location, planetaryDay, name: name || undefined });
+      await exportReport({ chart, date, location, planetaryDay, name: name || undefined, sections });
     } catch (err) {
       console.error('[PDF]', err);
     } finally {
@@ -56,25 +56,9 @@ const ChartPanel: React.FC<ChartPanelProps> = ({ chart, date, planetaryDay, loca
     }
   };
 
-  // Nome opcional para a capa (mapas natais); lembra o último usado
+  // Nome opcional para a capa e seções do PDF (lembra a última escolha)
   const handleExport = () => {
-    if (exporting) return;
-    presentAlert({
-      header: 'Gerar PDF',
-      message: 'Nome para a capa (opcional, para mapas natais).',
-      inputs: [{ name: 'name', type: 'text', placeholder: 'Nome', value: localStorage.getItem(PDF_NAME_KEY) ?? '' }],
-      buttons: [
-        { text: 'Cancelar', role: 'cancel' },
-        {
-          text: 'Gerar',
-          handler: (values: { name?: string }) => {
-            const name = (values?.name ?? '').trim();
-            localStorage.setItem(PDF_NAME_KEY, name);
-            void generate(name);
-          },
-        },
-      ],
-    });
+    if (!exporting) setExportOpen(true);
   };
 
   return (
@@ -122,6 +106,11 @@ const ChartPanel: React.FC<ChartPanelProps> = ({ chart, date, planetaryDay, loca
       </div>
 
       <SkyHistoryModal isOpen={historyOpen} onClose={() => setHistoryOpen(false)} />
+      <PdfExportModal
+        isOpen={exportOpen}
+        onClose={() => setExportOpen(false)}
+        onGenerate={(name, sections) => void generate(name, sections)}
+      />
     </div>
   );
 };

@@ -20,13 +20,18 @@ import VedicChart from '../../components/VedicChart';
 import AspectGrid from '../../components/AspectGrid';
 import PlanetaryHoursChart from '../../components/PlanetaryHoursChart';
 import NakshatraSymbol from '../../components/NakshatraSymbol';
-import { NAKSHATRAS, NAKSHATRA_DATA } from '../../utils/lunarMansions';
+import { MANAZIL, NAKSHATRAS, NAKSHATRA_DATA } from '../../utils/lunarMansions';
+import {
+  BENEFIC_WESTERN, HOUR_USE, MALEFIC_WESTERN, TITHI_GROUP_TEXT, VARA_INFO,
+  muhurtaChecks, siderealNakshatra, tithiOf, varaOf, westernMoon, zodiacLons,
+} from '../../utils/electionalReading';
 import {
   BHAVA_TEXT, DASHA_YEARS, GANA_TEXT, GRAHA_INFO, GRAHA_NAMES, HOUSE_GROUPS, HOUSE_TYPE_TEXT, LAGNA_TEXT, NAKSHATRA_INFO, NATURE_TEXT, SIGN_INFO, VEDIC_RULERS,
   dignityText, grahaDignity, grahasInHouse, houseSignIndex, nakshatraPada, nakshatraSpan, padaNavamsha, wholeSignHouse,
 } from '../../utils/vedicReading';
 import { registerFonts, setRunFont, splitRuns } from './pdfFonts';
 import { chartToSvg } from './pdfSvg';
+import { ALL_SECTIONS, REPORT_SECTIONS, type ReportSection } from './pdfSections';
 
 /**
  * Relatório em PDF (A4): capa, leitura védica e leitura ocidental montado só a partir dos dados do mapa:
@@ -40,6 +45,8 @@ export interface ReportInput {
   planetaryDay: PlanetaryDay | null;
   /** Nome para a capa (opcional, para mapas natais) */
   name?: string;
+  /** Seções incluídas, na ordem de ALL_SECTIONS (vazio/ausente: todas) */
+  sections?: readonly ReportSection[];
 }
 
 const W = 210;
@@ -221,7 +228,14 @@ function card(doc: jsPDF, t: Theme, x: number, y: number, w: number, h: number, 
   }
 }
 
-type Part = 'cover' | 'vedic' | 'western';
+type Part = 'cover' | ReportSection;
+
+const PART_FOOTER: Record<ReportSection, string> = {
+  'vedic-natal': 'leitura védica · casas por signo inteiro',
+  'vedic-electional': 'muhurta · sideral Lahiri, casas por signo inteiro',
+  'western-natal': 'leitura ocidental · casas iguais a partir do ASC',
+  'western-electional': 'eleição ocidental · Lua e manazil no zodíaco tropical',
+};
 
 function footer(doc: jsPDF, t: Theme, input: ReportInput, page: number, pages: number, part: Part): void {
   if (part === 'cover') return;
@@ -231,8 +245,7 @@ function footer(doc: jsPDF, t: Theme, input: ReportInput, page: number, pages: n
   doc.setDrawColor(t.line);
   doc.setLineWidth(0.2);
   doc.line(M, H - 11, W - M, H - 11);
-  const houses = part === 'vedic' ? 'leitura védica · casas por signo inteiro' : 'leitura ocidental · casas iguais a partir do ASC';
-  rich(doc, `Astrosattwa · ${sys} · ${houses}`, M, H - 7, { size: 7, color: t.faint });
+  rich(doc, `Astrosattwa · ${sys} · ${PART_FOOTER[part]}`, M, H - 7, { size: 7, color: t.faint });
   rich(doc, `Paleta do dia: ${t.paletteName} · ${page}/${pages}`, W - M, H - 7, { size: 7, color: t.faint, align: 'right' });
 }
 
@@ -756,16 +769,17 @@ async function coverPage(doc: jsPDF, t: Theme, input: ReportInput): Promise<void
 
   // Sumário
   y += 14;
-  const boxW = 130;
+  const boxW = 150;
   const bx = (W - boxW) / 2;
-  card(doc, t, bx, y, boxW, 30);
+  const included = REPORT_SECTIONS.filter(s => sectionsOf(input).includes(s.id));
+  card(doc, t, bx, y, boxW, 14 + 8 * included.length);
   rich(doc, 'NESTA LEITURA', bx + 7, y + 7, { size: 7, color: t.highlight, bold: true, spacing: 0.4 });
-  rich(doc, 'I', bx + 7, y + 15, { size: 9, color: t.highlight, bold: true });
-  rich(doc, 'Leitura védica', bx + 14, y + 15, { size: 10, color: t.text, bold: true });
-  rich(doc, 'Lagna, regente, Lua, nakshatra e casas', bx + 46, y + 15, { size: 8.5, color: t.muted });
-  rich(doc, 'II', bx + 7, y + 23, { size: 9, color: t.highlight, bold: true });
-  rich(doc, 'Leitura ocidental', bx + 14, y + 23, { size: 10, color: t.text, bold: true });
-  rich(doc, 'mandala, aspectos, horas e leitura breve', bx + 46, y + 23, { size: 8.5, color: t.muted });
+  included.forEach((s, i) => {
+    const ly = y + 15 + 8 * i;
+    rich(doc, ['I', 'II', 'III', 'IV'][i], bx + 7, ly, { size: 9, color: t.highlight, bold: true });
+    rich(doc, s.label, bx + 16, ly, { size: 10, color: t.text, bold: true });
+    rich(doc, fit(doc, s.hint, boxW - 63, 8.5), bx + 56, ly, { size: 8.5, color: t.muted });
+  });
 
   rich(doc, 'Leitura descritiva, sem caráter de previsão.', W / 2, H - 16, { size: 8, color: t.faint, align: 'center' });
   doc.setFillColor(t.accent);
@@ -787,10 +801,15 @@ interface Story {
 
 const PARA_GAP = 3.2 + V_LH - 0.4; // da linha de base anterior à primeira linha do parágrafo
 
+/* Bloco sem moldura: rubrica com filete, título e texto corrido na largura toda. */
+const STORY_TOP = 3;      // da borda do bloco à linha de base da rubrica
+const STORY_TITLE = 6.6;  // da rubrica à linha de base do título
+const STORY_GAP = 7;      // entre blocos
+
 function storyHeight(doc: jsPDF, st: Story, w: number): number {
-  let cy = st.kicker ? 10.2 : 6.4;
-  for (const p of st.paras) cy = flow(doc, p, 0, cy + PARA_GAP, w - 10, V_SIZE, V_LH, false) - V_LH;
-  return cy + 4.4;
+  let cy = st.kicker ? STORY_TOP + STORY_TITLE : STORY_TOP;
+  for (const p of st.paras) cy = flow(doc, p, 0, cy + PARA_GAP, w, V_SIZE, V_LH, false) - V_LH;
+  return cy + 1.5;
 }
 
 function drawSegs(doc: jsPDF, segs: Seg[], x: number, y: number, size: number, align: 'left' | 'right' = 'left'): void {
@@ -799,26 +818,25 @@ function drawSegs(doc: jsPDF, segs: Seg[], x: number, y: number, size: number, a
   for (const g of segs) cx += rich(doc, g.text, cx, y, { size, color: g.color, bold: g.bold }) + (g.bold ? BOLD_SLACK : 0);
 }
 
-function drawStory(doc: jsPDF, t: Theme, st: Story, y: number, h: number): void {
+function drawStory(doc: jsPDF, t: Theme, st: Story, y: number): void {
   const x = M;
   const w = W - 2 * M;
-  card(doc, t, x, y, w, h, st.edge);
-  let cy = y + (st.kicker ? 5.6 : 6.4);
+  let cy = y + STORY_TOP;
   if (st.kicker) {
-    rich(doc, st.kicker, x + 5, cy, { size: 6.8, color: t.highlight, bold: true, spacing: 0.4 });
-    cy += 4.6;
+    sectionTitle(doc, t, st.kicker, x, cy, w);
+    cy += STORY_TITLE;
   }
-  drawSegs(doc, st.title, x + 5, cy, 10.5);
-  if (st.right) drawSegs(doc, st.right, x + w - 5, cy, 9, 'right');
-  for (const p of st.paras) cy = flow(doc, p, x + 5, cy + PARA_GAP, w - 10, V_SIZE, V_LH) - V_LH;
+  drawSegs(doc, st.title, x, cy, 10.5);
+  if (st.right) drawSegs(doc, st.right, x + w, cy, 9, 'right');
+  for (const p of st.paras) cy = flow(doc, p, x, cy + PARA_GAP, w, V_SIZE, V_LH) - V_LH;
 }
 
 /** Coloca um bloco, abrindo página nova se não couber. Devolve o y seguinte. */
 function placeStory(doc: jsPDF, t: Theme, input: ReportInput, st: Story, y: number): number {
   const h = storyHeight(doc, st, W - 2 * M);
   if (y + h > CONTENT_BOTTOM) y = newPage(doc, t, input);
-  drawStory(doc, t, st, y, h);
-  return y + h + 3.5;
+  drawStory(doc, t, st, y);
+  return y + h + STORY_GAP;
 }
 
 const pName = (name: string) => `${glyph(name)} ${nameOf(name)}`;
@@ -948,23 +966,22 @@ async function nakshatraStory(doc: jsPDF, t: Theme, input: ReportInput, y: numbe
   const x = M;
   const w = W - 2 * M;
   const sym = 36;
-  const tx = x + 6 + sym + 8;
-  const tw = x + w - 6 - tx;
+  const tx = x + sym + 8;
+  const tw = x + w - tx;
 
   // Alturas: cabeçalho (símbolo | título + frase de posição) e corpo em largura total
   const leadEnd = flow(doc, nakshatraLead(t, chart, idx), 0, 22, tw, V_SIZE, V_LH, false) - V_LH;
   const headH = Math.max(6 + sym + 12, leadEnd + 4);
   const body = nakshatraBody(t, chart, idx);
   let bodyEnd = headH - PARA_GAP + V_LH;
-  for (const p of body) bodyEnd = flow(doc, p, 0, bodyEnd + PARA_GAP, w - 12, V_SIZE, V_LH, false) - V_LH;
+  for (const p of body) bodyEnd = flow(doc, p, 0, bodyEnd + PARA_GAP, w, V_SIZE, V_LH, false) - V_LH;
   const h = bodyEnd + 5;
   if (y + h > CONTENT_BOTTOM) y = newPage(doc, t, input);
 
-  card(doc, t, x, y, w, h, t.highlight);
   await drawSvg(doc, React.createElement(NakshatraSymbol, {
     index: idx, color: t.highlight, bg: blend(t.accent, t.raised, 0.18), ring: blend(t.highlight, t.raised, 0.55),
-  }), t, x + 6, y + 6, sym, sym);
-  const cx = x + 6 + sym / 2;
+  }), t, x, y + 6, sym, sym);
+  const cx = x + sym / 2;
   rich(doc, fit(doc, NAKSHATRAS[idx], sym + 8, 9.5, true), cx, y + 6 + sym + 5, { size: 9.5, color: t.text, bold: true, align: 'center' });
   rich(doc, fit(doc, data.symbol.toLowerCase(), sym + 8, 7.5), cx, y + 6 + sym + 9.2, { size: 7.5, color: t.faint, align: 'center' });
 
@@ -978,10 +995,10 @@ async function nakshatraStory(doc: jsPDF, t: Theme, input: ReportInput, y: numbe
 
   doc.setDrawColor(t.line);
   doc.setLineWidth(0.15);
-  doc.line(x + 6, y + headH, x + w - 6, y + headH);
+  doc.line(x, y + headH, x + w, y + headH);
   let py = y + headH - PARA_GAP + V_LH;
-  for (const p of body) py = flow(doc, p, x + 6, py + PARA_GAP, w - 12, V_SIZE, V_LH) - V_LH;
-  return y + h + 3.5;
+  for (const p of body) py = flow(doc, p, x, py + PARA_GAP, w, V_SIZE, V_LH) - V_LH;
+  return y + h + STORY_GAP;
 }
 
 function houseStory(t: Theme, chart: ChartData, house: number): Story {
@@ -1102,11 +1119,207 @@ async function vedicReading(doc: jsPDF, t: Theme, input: ReportInput): Promise<v
   }
 }
 
+/* ── Leitura ocidental: mandala, posições e aspectos ── */
+
+async function westernReading(doc: jsPDF, t: Theme, input: ReportInput): Promise<void> {
+  const { chart } = input;
+  doc.addPage();
+  paintPage(doc, t);
+  let y = header(doc, t, input, false, 'LEITURA OCIDENTAL') + 7;
+
+  const chartW = 110;
+  sectionTitle(doc, t, 'Mandala', M, y, W - 2 * M);
+  y += 3;
+  await drawSvg(doc, React.createElement(MandalaChart, { data: chart }), t, (W - chartW) / 2, y, chartW, chartW);
+  y += chartW + 6;
+
+  sectionTitle(doc, t, 'Posições', M, y, W - 2 * M);
+  y = positionsTable(doc, t, chart, y + 6.5) + 6;
+  anglesRow(doc, t, chart, y);
+
+  y = newPage(doc, t, input);
+  const gridW = 100;
+  const gx = (W - gridW) / 2;
+  sectionTitle(doc, t, 'Aspectos', M, y, W - 2 * M);
+  y += 5;
+  await drawSvg(doc, React.createElement(AspectGrid, { planets: chart.planets }), t, gx, y, gridW, gridW);
+  y += gridW + 3;
+  y = aspectLegend(doc, t, gx, y, gridW) + 9;
+
+  sectionTitle(doc, t, 'Aspectos por orbe', M, y, W - 2 * M);
+  aspectList(doc, t, chart, y + 6);
+}
+
+/* ── Eletivo védico: muhurta (vara, tithi, nakshatra, lagna do momento) ── */
+
+async function vedicElectional(doc: jsPDF, t: Theme, input: ReportInput): Promise<void> {
+  const { chart } = input;
+  const ay = calculateLahiriAyanamsa(input.date);
+  const { sidereal } = zodiacLons(chart, ay);
+  doc.addPage();
+  paintPage(doc, t);
+  let y = header(doc, t, input, false, 'MUHURTA · ELEIÇÃO VÉDICA') + 7;
+  y = paragraph(doc,
+    'O muhurta escolhe o momento de um começo pelos cinco membros do panchanga e pelo mapa do próprio instante. ' +
+    'Resumo dos critérios mais usados; não substitui o exame do mapa natal de quem age (tara bala, chandra bala).',
+    M, y, W - 2 * M, 8, t.muted, 3.6) + 4;
+
+  // Vara
+  const vara = varaOf(input.planetaryDay, input.date);
+  const vi = VARA_INFO[vara.ruler];
+  y = placeStory(doc, t, input, {
+    kicker: 'VARA · DIA DA SEMANA',
+    title: [B(`${glyph(vara.ruler)} ${vi.name}`, t.text), N(` · dia de ${nameOf(vara.ruler)}`, t.muted)],
+    paras: [
+      [N(`O dia védico corre de um nascer do sol ao seguinte e pertence ao graha que o nomeia. A tradição do muhurta reserva o dia de ${nameOf(vara.ruler)} a ${vi.use}.`, t.text)],
+      ...(vara.rahuKala ? [[
+        N('Rahu kala, a oitava parte do dia evitada para inícios: ', t.faint),
+        B(`${hhmm(vara.rahuKala.start)}–${hhmm(vara.rahuKala.end)}`, t.muted), N('.', t.faint),
+      ]] : []),
+    ],
+    edge: PLANET_COLORS[vara.ruler],
+  }, y);
+
+  // Tithi
+  const ti = tithiOf(chart.moonPhase.angle);
+  const tg = TITHI_GROUP_TEXT[ti.group];
+  y = placeStory(doc, t, input, {
+    kicker: 'TITHI · DIA LUNAR',
+    title: [B(ti.name, t.text), N(` · ${ti.n}ª de ${ti.shukla ? 'Shukla' : 'Krishna'} paksha`, t.muted)],
+    right: [N(`${Math.round(ti.progress * 100)}% decorrido`, t.faint)],
+    paras: [
+      [N(`O tithi mede cada 12° de afastamento entre a Lua e o Sol; são trinta no mês lunar. ${ti.shukla
+        ? 'Shukla paksha, a quinzena clara, é a preferida para inícios.'
+        : 'Krishna paksha, a quinzena escura, é tradicionalmente reservada a conclusões, mais que a inícios.'}`, t.text)],
+      [
+        N('Pertence ao grupo ', t.text), B(`${tg.name}`, t.text), N(` ("${tg.meaning}"), associado a ${tg.use}.`, t.text),
+        ...(ti.name === 'Amavasya' ? [N(' Amavasya, a lua nova, é evitada para toda obra auspiciosa.', t.text)] : []),
+      ],
+    ],
+    edge: PLANET_COLORS.Moon,
+  }, y);
+
+  // Nakshatra (sideral)
+  const ni = siderealNakshatra(chart, ay);
+  const info = NAKSHATRA_INFO[ni];
+  const nd = NAKSHATRA_DATA[ni];
+  y = placeStory(doc, t, input, {
+    kicker: 'NAKSHATRA DA LUA',
+    title: [B(NAKSHATRAS[ni], t.text), N(` (${info.meaning}) · devata ${nd.devata}`, t.muted)],
+    right: [N(`regente ${nd.lord}`, t.faint)],
+    paras: [[N(`O nakshatra ocupado pela Lua é o membro mais pesado do muhurta. ${NATURE_TEXT[info.nature]}`, t.text)]],
+    edge: PLANET_COLORS.Moon,
+  }, y);
+
+  // Lagna do muhurta
+  const lagna = signOf(sidereal(chart.ascendant));
+  const checks = muhurtaChecks(chart, ay, nameOf);
+  placeStory(doc, t, input, {
+    kicker: 'LAGNA DO MUHURTA',
+    title: [B(`Lagna em ${lagna.glyph} ${signName(lagna.name)}`, t.text), N(` (${SIGN_INFO[lagna.name].skt})`, t.muted)],
+    paras: [
+      [N('O instante é julgado como um mapa, com casas por signo inteiro a partir do lagna. Regras mais citadas:', t.text)],
+      ...checks.map(c => [
+        B(`${c.rule}: `, t.text),
+        B(c.holds ? 'atendida' : 'não atendida', c.holds ? '#27ae60' : '#c0392b'),
+        N(` (${c.detail}).`, t.muted),
+      ]),
+    ],
+    edge: lagna.color,
+  }, y);
+}
+
+/* ── Eletivo ocidental: Lua, manzil e horas planetárias ── */
+
+async function westernElectional(doc: jsPDF, t: Theme, input: ReportInput): Promise<void> {
+  const { chart } = input;
+  const ay = calculateLahiriAyanamsa(input.date);
+  doc.addPage();
+  paintPage(doc, t);
+  let y = header(doc, t, input, false, 'ELEIÇÃO OCIDENTAL') + 5;
+  y = statusCards(doc, t, input, y) + 7;
+
+  // Lua
+  const m = westernMoon(chart, ay);
+  const sign = ZODIAC_SIGNS[m.signIndex];
+  const moonParas: Seg[][] = [
+    [N('Na eleição ocidental a Lua é a significadora geral de todo começo: a sua condição pesa sobre qualquer escolha, qualquer que seja o assunto. ' + (m.waxing
+      ? 'Está crescente, afastando-se do Sol, e a tradição a prefere assim para o que deve crescer e tornar-se visível.'
+      : 'Está minguante, aproximando-se do Sol, e a tradição a reserva para o que deve diminuir, concluir-se ou permanecer oculto.'), t.text)],
+  ];
+  const flaws: string[] = [];
+  if (m.sunState === 'combusta') flaws.push('a menos de 8°30\' do Sol, está combusta, condição que os autores mandam evitar');
+  if (m.sunState === 'sob os raios') flaws.push('a menos de 17° do Sol, está sob os raios, condição enfraquecida');
+  if (m.viaCombusta) flaws.push('atravessa a via combusta (15° de Libra a 15° de Escorpião), trecho tradicionalmente evitado');
+  if (flaws.length) moonParas.push([N(`${flaws.join('; ')}.`.replace(/^./, c => c.toUpperCase()), t.text)]);
+  if (m.next) {
+    const kind = BENEFIC_WESTERN.includes(m.next.planet)
+      ? ' Aplicar a um benéfico é o testemunho preferido.'
+      : MALEFIC_WESTERN.includes(m.next.planet)
+        ? ' Aplicar a um maléfico é testemunho de obstáculo, menos grave por sextil ou trígono.'
+        : '';
+    moonParas.push([
+      N('Antes de deixar o signo, o próximo aspecto que perfaz é ', t.text),
+      B(`${m.next.aspect} a ${nameOf(m.next.planet)}`, t.text),
+      N(`, em cerca de ${degMin(m.next.distance)}.${kind}`, t.text),
+    ]);
+  } else {
+    moonParas.push([N(`Não perfaz aspecto com os planetas tradicionais antes de deixar o signo (faltam ${degMin(m.toSignEnd)}): está `, t.text),
+      B('fora de curso', t.text), N(', e a tradição diz que o que então se inicia não chega a termo.', t.text)]);
+  }
+  y = placeStory(doc, t, input, {
+    kicker: 'A LUA · SIGNIFICADORA GERAL',
+    title: [B(`${glyph('Moon')} Lua em ${sign.glyph} ${signName(sign.name)} ${degMin(m.lon % 30)}`, t.text),
+      ...(m.dignity ? [N(` · ${m.dignity}`, t.muted)] : [])],
+    right: [N('zodíaco tropical', t.faint)],
+    paras: moonParas,
+    edge: PLANET_COLORS.Moon,
+  }, y);
+
+  // Manzil (tropical, a partir de 0° de Áries)
+  const z = MANAZIL[m.manzil];
+  y = placeStory(doc, t, input, {
+    kicker: 'MANZIL · MANSÃO LUNAR',
+    title: [N(`${m.manzil + 1}ª `, t.faint), B(z.name, t.text), N(` · ${z.meaning}`, t.muted)],
+    paras: [
+      [N('As vinte e oito mansões dividem o percurso mensal da Lua a partir de 0° de Áries; o Picatrix e Agrippa (De Occulta Philosophia II, 33) atribuem a cada uma as operações que favorece ou impede.', t.text)],
+      [B('Uso eletivo: ', t.text), N(z.election, t.text)],
+    ],
+    edge: PLANET_COLORS.Moon,
+  }, y);
+
+  // Hora planetária
+  const day = input.planetaryDay;
+  const hour = day?.current ?? null;
+  if (hour && day) {
+    y = placeStory(doc, t, input, {
+      kicker: 'HORA PLANETÁRIA',
+      title: [B(`${glyph(hour.ruler)} Hora de ${nameOf(hour.ruler)}`, t.text), N(` · ${hhmm(hour.start)}–${hhmm(hour.end)}`, t.muted)],
+      right: [N(`dia de ${nameOf(day.ruler)}`, t.faint)],
+      paras: [[N(`O dia e a noite dividem-se cada um em doze horas desiguais, regidas na ordem caldaica a partir do regente do dia. A hora de ${nameOf(hour.ruler)} é tradicionalmente indicada para ${HOUR_USE[hour.ruler]}.`, t.text)]],
+      edge: PLANET_COLORS[hour.ruler],
+    }, y);
+  }
+
+  if (!day) return;
+  const chartW = 92;
+  const need = 8 + chartW + 6 + 64;
+  if (y + need > CONTENT_BOTTOM) y = newPage(doc, t, input);
+  else y += 3;
+  sectionTitle(doc, t, `Horas planetárias · dia de ${WEEKDAY_NAMES_PT[day.weekday]} ${glyph(day.ruler)}`, M, y, W - 2 * M);
+  y += 5;
+  await drawSvg(doc, React.createElement(PlanetaryHoursChart, { day, date: input.date }), t, (W - chartW) / 2, y, chartW, chartW);
+  hoursTable(doc, t, day, y + chartW + 6);
+}
+
+function sectionsOf(input: ReportInput): readonly ReportSection[] {
+  return input.sections?.length ? input.sections : ALL_SECTIONS;
+}
+
 export async function buildReport(input: ReportInput): Promise<jsPDF> {
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
   await registerFonts(doc);
   const t = makeTheme(input);
-  const { chart } = input;
   const who = input.name ? `${input.name} · ` : '';
   doc.setProperties({ title: `Astrosattwa · ${who}${ddmmyyyy(input.date)} ${hhmm(input.date)}`, creator: 'Astrosattwa' });
   const parts: Part[] = [];
@@ -1116,57 +1329,17 @@ export async function buildReport(input: ReportInput): Promise<jsPDF> {
   await coverPage(doc, t, input);
   mark('cover');
 
-  /* Leitura védica */
-  await vedicReading(doc, t, input);
-  mark('vedic');
-
-  /* Leitura ocidental */
-  doc.addPage();
-  paintPage(doc, t);
-  let y = header(doc, t, input, false, 'LEITURA OCIDENTAL') + 5;
-  y = statusCards(doc, t, input, y) + 8;
-
-  const chartW = 100;
-  sectionTitle(doc, t, 'Mandala', M, y, W - 2 * M);
-  y += 3;
-  await drawSvg(doc, React.createElement(MandalaChart, { data: chart }), t, (W - chartW) / 2, y, chartW, chartW);
-  y += chartW + 4;
-
-  sectionTitle(doc, t, 'Posições', M, y, W - 2 * M);
-  y = positionsTable(doc, t, chart, y + 6.5) + 6;
-  anglesRow(doc, t, chart, y);
-
-  /* Página 2 */
-  doc.addPage();
-  paintPage(doc, t);
-  y = header(doc, t, input, true) + 8;
-
-  const leftW = 96;
-  const rightX = M + leftW + 8;
-  const rightW = W - M - rightX;
-  sectionTitle(doc, t, 'Aspectos', M, y, leftW);
-  sectionTitle(doc, t, 'Horas planetárias', rightX, y, rightW);
-  y += 5;
-  await drawSvg(doc, React.createElement(AspectGrid, { planets: chart.planets }), t, M, y, leftW, leftW);
-  if (input.planetaryDay) {
-    await drawSvg(doc, React.createElement(PlanetaryHoursChart, { day: input.planetaryDay, date: input.date }), t, rightX, y, rightW, rightW);
-  } else {
-    rich(doc, 'Sem nascer/pôr do sol nesta data e local.', rightX, y + 20, { size: 8.5, color: t.muted });
+  /* Cada tradição marcada × cada tipo marcado, na ordem de ALL_SECTIONS */
+  const builders: Record<ReportSection, () => Promise<void> | void> = {
+    'vedic-natal': () => vedicReading(doc, t, input),
+    'vedic-electional': () => vedicElectional(doc, t, input),
+    'western-natal': async () => { await westernReading(doc, t, input); briefReading(doc, t, input); },
+    'western-electional': () => westernElectional(doc, t, input),
+  };
+  for (const s of sectionsOf(input)) {
+    await builders[s]();
+    mark(s);
   }
-  y += leftW + 3;
-  y = aspectLegend(doc, t, M, y, leftW) + 9;
-
-  sectionTitle(doc, t, 'Aspectos por orbe', M, y, W - 2 * M);
-  y = aspectList(doc, t, chart, y + 6) + 6;
-
-  if (input.planetaryDay) {
-    sectionTitle(doc, t, `Horas planetárias · dia de ${WEEKDAY_NAMES_PT[input.planetaryDay.weekday]} ${glyph(input.planetaryDay.ruler)}`, M, y, W - 2 * M);
-    hoursTable(doc, t, input.planetaryDay, y + 6);
-  }
-
-  /* Páginas seguintes: leitura breve natal */
-  briefReading(doc, t, input);
-  mark('western');
 
   const pages = doc.getNumberOfPages();
   for (let p = 1; p <= pages; p++) {
