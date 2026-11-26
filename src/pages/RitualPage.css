@@ -1,0 +1,526 @@
+/* Auxiliar de rituais: herda as variáveis da paleta do planeta escolhido (style no IonPage) */
+
+.ritual-page .app-content {
+  --background: var(--as-bg);
+}
+
+.rt-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Seletor de planetas ── */
+
+.rt-planets {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.rt-planet {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+  background: var(--as-surface-2);
+  border: 1px solid var(--as-border);
+  border-radius: var(--as-radius);
+  color: var(--as-text);
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.rt-planets.small .rt-planet {
+  height: 46px;
+  font-size: 1.1rem;
+}
+
+.rt-planet.day::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--as-highlight);
+}
+
+.rt-planet.active {
+  background: var(--as-accent);
+  color: var(--as-on-accent);
+  text-shadow: var(--as-on-accent-shadow);
+  border-color: var(--as-accent);
+}
+
+.rt-planet.active.day::after {
+  background: var(--as-on-accent);
+}
+
+.rt-order {
+  font-size: 0.62rem;
+  opacity: 0.75;
+}
+
+/* ── Cards ── */
+
+.rt-card {
+  background: var(--as-surface);
+  border: 1px solid var(--as-border);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rt-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rt-card-glyph {
+  font-size: 2rem;
+  color: var(--as-highlight);
+  width: 44px;
+  text-align: center;
+}
+
+.rt-card-title {
+  font-family: Georgia, serif;
+  font-size: 1.05rem;
+  color: var(--as-highlight);
+}
+
+.rt-card-sub {
+  font-size: 0.78rem;
+  color: var(--as-muted);
+}
+
+.rt-foot {
+  margin: 4px 0 0;
+  font-size: 0.72rem;
+  color: var(--as-faint);
+}
+
+/* ── Horas ── */
+
+.rt-hour {
+  border: 1px solid var(--as-border);
+  border-left-width: 4px;
+  border-radius: 8px;
+  background: var(--as-surface);
+}
+
+.rt-hour > summary {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.rt-hour > summary::-webkit-details-marker { display: none; }
+
+.rt-hour-time {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.rt-hour-kind {
+  font-size: 0.72rem;
+  color: var(--as-muted);
+}
+
+.rt-grade {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.rt-score {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8rem;
+  color: var(--as-muted);
+  min-width: 2.2em;
+  text-align: right;
+}
+
+.grade-excelente { border-left-color: #3ecf8e; }
+.grade-excelente .rt-grade { background: rgba(62, 207, 142, 0.18); color: #6fe0ad; }
+.grade-boa { border-left-color: #7fb8ff; }
+.grade-boa .rt-grade { background: rgba(127, 184, 255, 0.16); color: #a9cfff; }
+.grade-remediada { border-left-color: #e9b949; }
+.grade-remediada .rt-grade { background: rgba(233, 185, 73, 0.16); color: #f0cc75; }
+.grade-evitar { border-left-color: #e5484d; }
+.grade-evitar .rt-grade { background: rgba(229, 72, 77, 0.16); color: #f08a8d; }
+
+.rt-hour[open] > summary {
+  border-bottom: 1px solid var(--as-border);
+}
+
+.rt-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 12px 0;
+}
+
+.rt-tag {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(176, 141, 87, 0.6);
+  color: #d2b48c;
+  background: rgba(176, 141, 87, 0.12);
+}
+
+.rt-items {
+  list-style: none;
+  margin: 0;
+  padding: 8px 12px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 0.8rem;
+}
+
+.rt-item-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rt-item-row span:last-child {
+  font-variant-numeric: tabular-nums;
+}
+
+.rt-items li.pos .rt-item-row span:last-child { color: #6fe0ad; }
+.rt-items li.neg .rt-item-row span:last-child { color: #f08a8d; }
+
+.rt-item-why {
+  font-size: 0.7rem;
+  line-height: 1.35;
+  color: var(--as-faint);
+  margin-bottom: 2px;
+}
+
+.rt-hour .rt-note {
+  padding: 0 12px;
+}
+
+.rt-mansion {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  color: var(--as-highlight);
+}
+
+.rt-mansion > div {
+  color: var(--as-text);
+}
+
+.rt-mansion:last-child {
+  padding-bottom: 10px;
+}
+
+.rt-mansion-num {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-size: 0.72rem;
+}
+
+.rt-mansion-use {
+  color: var(--as-muted);
+  font-size: 0.75rem;
+}
+
+/* ── Retráteis ── */
+
+.rt-folds {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rt-fold {
+  background: var(--as-surface);
+  border: 1px solid var(--as-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.rt-fold > summary {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 40px 12px 14px;
+  position: relative;
+  cursor: pointer;
+  list-style: none;
+}
+
+.rt-fold > summary::-webkit-details-marker { display: none; }
+
+.rt-fold > summary::after {
+  content: '';
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid var(--as-muted);
+  border-bottom: 1.5px solid var(--as-muted);
+  transform: translateY(-70%) rotate(45deg);
+  transition: transform 0.15s;
+}
+
+.rt-fold[open] > summary::after {
+  transform: translateY(-30%) rotate(-135deg);
+}
+
+.rt-fold[open] > summary {
+  border-bottom: 1px solid var(--as-border);
+}
+
+.rt-fold-title {
+  font-family: Georgia, serif;
+  font-size: 0.98rem;
+  color: var(--as-highlight);
+}
+
+.rt-fold-meta {
+  font-size: 0.75rem;
+  color: var(--as-muted);
+}
+
+.rt-fold-body {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rt-being + .rt-being {
+  border-top: 1px solid var(--as-border);
+  padding-top: 12px;
+}
+
+.rt-being-title {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--as-muted);
+}
+
+.rt-being-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.rt-being-name {
+  font-family: Georgia, serif;
+  font-size: 1.05rem;
+}
+
+.rt-hebrew {
+  font-size: 1.5rem;
+  color: var(--as-highlight);
+  font-family: 'Times New Roman', 'Noto Serif Hebrew', serif;
+}
+
+.rt-being-num {
+  font-size: 0.78rem;
+  color: var(--as-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.rt-seal-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.rt-seal-box {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10%;
+  border: 1px solid var(--as-border);
+  border-radius: 8px;
+  color: var(--as-highlight);
+}
+
+.rt-seal-box.big {
+  width: min(240px, 70%);
+  margin: 0 auto;
+  padding: 6%;
+}
+
+.rt-seal-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.rt-olympic {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rt-olympic figcaption {
+  font-size: 0.66rem;
+  color: var(--as-faint);
+  text-align: center;
+}
+
+.rt-seal-pair figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rt-seal-pair figcaption {
+  font-size: 0.66rem;
+  color: var(--as-faint);
+  text-align: center;
+}
+
+
+.rt-text {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.rt-note {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--as-muted);
+}
+
+.rt-note.warn {
+  color: #f0cc75;
+}
+
+.rt-ref {
+  margin: 0;
+  font-size: 0.7rem;
+  font-style: italic;
+  color: var(--as-faint);
+}
+
+/* ── Kamea ── */
+
+.kamea-sigil {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.ks-cell {
+  fill: rgba(255, 255, 255, 0.03);
+  stroke: rgba(var(--as-accent-rgb), 0.35);
+  stroke-width: 1;
+}
+
+.ks-num {
+  fill: rgba(255, 255, 255, 0.35);
+  font-variant-numeric: tabular-nums;
+}
+
+.ks-line,
+.ks-start {
+  fill: none;
+  stroke: var(--as-highlight);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ── Criador de sigilo ── */
+
+.rt-methods {
+  flex-wrap: wrap;
+}
+
+.rt-input {
+  font-size: 1rem;
+}
+
+.rt-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--as-muted);
+}
+
+.rt-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.rt-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 7px;
+  border: 1px solid var(--as-border);
+  border-radius: 6px;
+  min-width: 34px;
+}
+
+.rt-step-letter {
+  font-weight: 600;
+}
+
+.rt-step-val {
+  font-size: 0.7rem;
+  color: var(--as-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.rt-sigil-wrap {
+  max-width: 360px;
+  width: 100%;
+  margin: 4px auto 0;
+}
+
+.rt-table > summary {
+  font-size: 0.78rem;
+  color: var(--as-muted);
+  cursor: pointer;
+}
+
+.rt-translit {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  gap: 4px;
+  padding-top: 6px;
+  font-size: 0.8rem;
+}

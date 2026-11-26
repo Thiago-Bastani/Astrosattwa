@@ -10,10 +10,11 @@ import {
   setupIonicReact
 } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
-import { planetOutline, bookOutline, calculatorOutline } from 'ionicons/icons';
+import { planetOutline, bookOutline, calculatorOutline, flameOutline } from 'ionicons/icons';
 import MandalaPage from './pages/MandalaPage';
 import ReferencePage from './pages/ReferencePage';
 import CalculatorPage from './pages/CalculatorPage';
+import RitualPage from './pages/RitualPage';
 import { DayThemeProvider } from './theme/DayTheme';
 import ThemeRouteSync from './theme/ThemeRouteSync';
 import { DeviceLocationProvider } from './services/DeviceLocation';
@@ -53,6 +54,7 @@ const App: React.FC = () => (
           <Route exact path="/mandala" component={MandalaPage} />
           <Route exact path="/referencia" component={ReferencePage} />
           <Route exact path="/calculadora" component={CalculatorPage} />
+          <Route exact path="/rituais" component={RitualPage} />
           <Redirect exact from="/" to="/mandala" />
         </IonRouterOutlet>
         <IonTabBar slot="bottom" className="app-tabbar">
@@ -67,6 +69,10 @@ const App: React.FC = () => (
           <IonTabButton tab="calculadora" href="/calculadora">
             <IonIcon icon={calculatorOutline} />
             <IonLabel>Calculadora</IonLabel>
+          </IonTabButton>
+          <IonTabButton tab="rituais" href="/rituais">
+            <IonIcon icon={flameOutline} />
+            <IonLabel>Rituais</IonLabel>
           </IonTabButton>
         </IonTabBar>
       </IonTabs>

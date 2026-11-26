@@ -13,7 +13,7 @@ interface BirthDataFormProps {
 const pad = (n: number) => String(n).padStart(2, '0');
 
 function toDateString(d: Date): string {
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  return `${String(d.getFullYear()).padStart(4, '0')}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
 function toTimeString(d: Date): string {
@@ -23,8 +23,11 @@ function toTimeString(d: Date): string {
 function parseDateInput(value: string): Date | null {
   if (!value) return null;
   const [y, m, d] = value.split('-').map(Number);
-  if (y >= 1900 && y <= 2100 && m >= 1 && m <= 12 && d >= 1 && d <= 31) {
-    const date = new Date(y, m - 1, d);
+  // Efemérides (astronomy-engine) valem por milênios; só barra lixo de digitação
+  if (y >= 1 && y <= 3000 && m >= 1 && m <= 12 && d >= 1 && d <= 31) {
+    // new Date(y, …) trata 0–99 como 1900–1999: setFullYear evita isso
+    const date = new Date(2000, 0, 1);
+    date.setFullYear(y, m - 1, d);
     if (!isNaN(date.getTime())) return date;
   }
   return null;
