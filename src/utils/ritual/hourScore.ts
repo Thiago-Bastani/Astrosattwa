@@ -21,6 +21,9 @@ export const HOUR_WEIGHTS = {
   planetDay: 3, sect: 2,
   ascDignity: 3,
   moonWaxing: 2, moonAspectsPlanet: 2, moonVoid: -4, moonIn8: -4,
+  /** Condição da própria Lua, com os mesmos pesos da tabela de Lilly. */
+  moonDetriment: -5, moonFall: -4, moonCombust: -5, moonUnderBeams: -4,
+  moonHouse: { 12: -5, 6: -2 } as Record<number, number>,
   /** Limite para "Excelente" (sem debilidades). */
   excellentFrom: 14,
 };
@@ -197,8 +200,39 @@ export function assessHour(
   // Lua
   const moon = westernMoon(chart);
   const moonP = chart.planets.find(q => q.name === 'Moon')!;
+  const moonSign = ZODIAC_SIGNS[moon.signIndex].name;
+  const moonSignPt = SIGN_NAMES_PT[moonSign];
   if (moon.waxing) add('Lua crescente', W.moonWaxing, 'Lua crescendo em luz: as coisas aumentam.');
-  if (planet !== 'Moon' && moon.next?.planet === planet) add(`Lua aplica ${moon.next.aspect} a ${pt(planet)}`, W.moonAspectsPlanet, 'A Lua leva a virtude do momento ao planeta: liga a hora à obra.');
+
+  // Aspecto que a Lua aplica ao planeta da obra. Recepção (Sahl, Introductorium;
+  // Māshā'allāh, De receptione): o planeta recebe a Lua quando ela está em signo de
+  // domicílio ou exaltação dele, e então o aspecto perfaz a coisa mesmo por quadratura
+  // ou oposição. Sem recepção, só conjunção, sextil e trígono contam como ligação.
+  if (planet !== 'Moon' && moon.next?.planet === planet) {
+    const asp = moon.next.aspect;
+    const recBy = d.domicilio.includes(moonSign) ? 'domicílio' : d.exaltacao.includes(moonSign) ? 'exaltação' : null;
+    const hard = asp === 'quadratura' || asp === 'oposição';
+    if (recBy) {
+      add(`Lua aplica ${asp} a ${pt(planet)}, com recepção`, W.moonAspectsPlanet,
+        `A Lua está em ${moonSignPt}, ${recBy} de ${pt(planet)}: ${pt(planet)} a recebe, e o aspecto perfaz a ligação da hora com a obra${hard ? ', mesmo sendo de inimizade' : ''} (Māshā'allāh, De receptione). A recepção não anula a debilidade da Lua.`);
+    } else if (!hard) {
+      add(`Lua aplica ${asp} a ${pt(planet)}`, W.moonAspectsPlanet, 'A Lua leva a virtude do momento ao planeta: liga a hora à obra.');
+    } else {
+      notes.push(`Lua aplica ${asp} a ${pt(planet)} sem recepção: aspecto de inimizade, não conta como ligação da hora à obra.`);
+    }
+  }
+
+  // Impedimentos da Lua (Bonatti, Liber Astronomiae, trat. VII; pesos de Lilly, CA II)
+  if (planet !== 'Moon') {
+    const dm = DIGNITY_TABLE.Moon;
+    if (dm.exilio.includes(moonSign)) { add(`Lua em exílio (${moonSignPt})`, W.moonDetriment, 'Signo oposto ao domicílio da Lua: o que ela leva à obra vai debilitado.'); debility = true; }
+    if (dm.queda.includes(moonSign)) { add(`Lua em queda (${moonSignPt})`, W.moonFall, 'Signo oposto à exaltação da Lua: o que ela leva à obra vai rebaixado.'); debility = true; }
+    if (moon.sunState === 'combusta') { add('Lua combusta', W.moonCombust, "A menos de 8°30' do Sol: a Lua queimada impede todo começo."); debility = true; }
+    else if (moon.sunState === 'sob os raios') { add('Lua sob os raios do Sol', W.moonUnderBeams, 'A menos de 17° do Sol: Lua enfraquecida.'); debility = true; }
+    const mh = W.moonHouse[moonP.house ?? 0];
+    if (mh) { add(`Lua na casa ${moonP.house}`, mh, HOUSE_WHY[moonP.house!]); debility = true; }
+    if (moon.viaCombusta) { notes.push('Lua na via combusta (15° de Libra a 15° de Escorpião): impedimento da Lua em Bonatti, sem peso na tabela de Lilly.'); debility = true; }
+  }
   if (moon.voidOfCourse) add('Lua fora de curso', W.moonVoid, 'Sem aspectos até mudar de signo: a obra tende a não se completar.');
   if (moonP.house === 8 && planet !== 'Moon') add('Lua na casa 8', W.moonIn8, 'Lua em casa de morte, sem aspecto ao Ascendente.');
 
