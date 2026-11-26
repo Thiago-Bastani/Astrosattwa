@@ -47,7 +47,7 @@ const App: React.FC = () => (
   <IonApp>
     <DeviceLocationProvider>
     <DayThemeProvider>
-    <IonReactRouter>
+    <IonReactRouter basename={import.meta.env.BASE_URL}>
       <ThemeRouteSync />
       <IonTabs>
         <IonRouterOutlet>

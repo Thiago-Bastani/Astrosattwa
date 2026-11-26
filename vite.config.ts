@@ -6,6 +6,8 @@ import { defineConfig } from 'vite'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  // No GitHub Pages o app fica em /Astrosattwa/; no Android/dev continua na raiz.
+  base: process.env.GITHUB_PAGES ? '/Astrosattwa/' : '/',
   plugins: [
     react(),
     legacy()
