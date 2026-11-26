@@ -92,13 +92,27 @@ const JOY: Record<string, number> = { Mercury: 1, Moon: 3, Venus: 5, Mars: 6, Su
 
 const EARTH_SIGNS = [1, 5, 9]; // Touro, Virgem, Capricórnio
 
-function termRuler(lon: number): string {
+/** Termo que contém a longitude: regente e graus de início e fim no signo. */
+function termAt(lon: number): { ruler: string; from: number; to: number } {
   const sign = Math.floor(lon / 30);
   const deg = lon - sign * 30;
-  return TERMS[sign].find(([, end]) => deg < end)![0];
+  const list = TERMS[sign];
+  const i = list.findIndex(([, end]) => deg < end);
+  return { ruler: list[i][0], from: i === 0 ? 0 : list[i - 1][1], to: list[i][1] };
 }
 
 const faceRuler = (lon: number) => FACE_ORDER[Math.floor(lon / 10) % 7];
+
+const ELEMENT_PT = ['fogo', 'terra', 'ar', 'água'];
+const ORD = ['1º', '2º', '3º'];
+
+/** Grau dentro do signo, como 3°12′. */
+function degMin(lon: number): string {
+  const inSign = lon % 30;
+  const d = Math.floor(inSign);
+  const m = Math.floor((inSign - d) * 60);
+  return `${d}°${String(m).padStart(2, '0')}′`;
+}
 
 /** Avalia uma hora do planeta. */
 export function assessHour(
@@ -123,9 +137,22 @@ export function assessHour(
   if (d.domicilio.includes(signName)) add(`Domicílio em ${signPt}`, W.domicile, 'Na própria casa: age com plena autoridade.');
   if (d.exaltacao.includes(signName)) add(`Exaltação em ${signPt}`, W.exaltation, 'Honrado como hóspede ilustre: dignidade elevada.');
   const trip = TRIPLICITY[signIdx % 4][hour.isDay ? 0 : 1];
-  if (trip === planet) add(`Triplicidade (${hour.isDay ? 'dia' : 'noite'})`, W.triplicity, 'Rege o elemento do signo nesta metade do dia: apoio e sorte.');
-  if (termRuler(lon) === planet) add('Termo próprio', W.term, 'Rege este trecho de graus do signo (termos egípcios): dignidade menor.');
-  if (faceRuler(lon) === planet) add('Face própria', W.face, 'Rege este decanato (faces caldeias): dignidade mínima.');
+  if (trip === planet) {
+    const [dayR, nightR] = TRIPLICITY[signIdx % 4];
+    const rulers = dayR === nightR ? `${pt(dayR)} de dia e de noite` : `${pt(dayR)} de dia e ${pt(nightR)} à noite`;
+    add(`Triplicidade (${hour.isDay ? 'dia' : 'noite'})`, W.triplicity,
+      `${signPt} é de ${ELEMENT_PT[signIdx % 4]}; ${['o fogo é regido', 'a terra é regida', 'o ar é regido', 'a água é regida'][signIdx % 4]} por ${rulers} (Lilly). Esta hora é ${hour.isDay ? 'diurna' : 'noturna'}: apoio e sorte.`);
+  }
+  const term = termAt(lon);
+  if (term.ruler === planet) {
+    add('Termo próprio', W.term,
+      `Termo de ${pt(planet)} em ${signPt}, ${term.from}°–${term.to}° (termos egípcios); o planeta está a ${degMin(lon)}. Cada signo tem 5 termos de tamanhos diferentes: dignidade menor.`);
+  }
+  if (faceRuler(lon) === planet) {
+    const dec = Math.floor((lon % 30) / 10);
+    add('Face própria', W.face,
+      `Face de ${pt(planet)}: ${ORD[dec]} decanato de ${signPt} (${dec * 10}°–${dec * 10 + 10}°); o planeta está a ${degMin(lon)}. Cada signo tem 3 faces de 10°, regidas na ordem caldeia: dignidade mínima.`);
+  }
   if (d.exilio.includes(signName)) { add(`Exílio em ${signPt}`, W.detriment, 'Signo oposto ao domicílio: age contra a própria natureza.'); debility = true; }
   if (d.queda.includes(signName)) { add(`Queda em ${signPt}`, W.fall, 'Signo oposto à exaltação: rebaixado, sem honra.'); debility = true; }
 

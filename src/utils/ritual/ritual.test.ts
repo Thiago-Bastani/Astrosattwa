@@ -39,6 +39,11 @@ describe('sigilo', () => {
     const s = buildSigil('אגיאל', KAMEAS.Saturn, 'hebrew', false);
     expect(s.path.map(p => p.value)).toEqual([1, 3, 1, 1, 3].filter((v, i, a) => i === 0 || v !== a[i - 1]));
   });
+  it('dígrafos viram uma letra hebraica', () => {
+    const s = buildSigil('Thoth Shin', KAMEAS.Mercury, 'aiqbekar', false);
+    expect(s.steps.map(x => x.hebrew)).toEqual(['ת', 'ע', 'ת', 'ש', 'י', 'נ']);
+    expect(buildSigil('Tiriel', KAMEAS.Mercury, 'aiqbekar', false).steps[0].hebrew).toBe('ט');
+  });
   it('corta repetidos', () => {
     const s = buildSigil('Ana', KAMEAS.Saturn, 'pythagorean', true);
     expect(s.steps.map(x => x.letter)).toEqual(['A', 'N']);
@@ -53,6 +58,19 @@ describe('horas', () => {
     const res = assessPlanetHours(day.ruler, day, loc, 'sidereal');
     expect(res.length).toBeGreaterThanOrEqual(3);
     for (const r of res) expect(r.items.length).toBeGreaterThan(0);
-    console.log(res.map(r => `${r.hour.start.toISOString()} ${r.grade} ${r.score} | ${r.items.map(i => i.label + ' ' + i.points).join('; ')} | ${r.notes.join(' ')}`).join('\n'));
+    for (const r of res) for (const i of r.items) expect(i.why.length).toBeGreaterThan(10);
+  });
+  it('dignidades menores explicam signo e graus', () => {
+    const loc = { lat: -19.9167, lon: -43.9345, name: 'BH' };
+    // Varre dias e planetas até achar termo e face próprios
+    const found: string[] = [];
+    for (let k = 0; k < 40 && found.length < 3; k++) {
+      const day = getPlanetaryDay(new Date(2026, 0, 1 + k * 9, 12), loc)!;
+      for (const pl of CHALDEAN_ORDER) for (const r of assessPlanetHours(pl, day, loc, 'tropical')) {
+        for (const i of r.items) if (/Termo|Face|Triplicidade/.test(i.label) && !found.some(f => f.startsWith(i.label))) found.push(`${i.label}: ${i.why}`);
+      }
+    }
+    console.log(found.join('\n'));
+    expect(found.some(f => /Termo próprio: Termo de .+ \d+°–\d+°/.test(f))).toBe(true);
   });
 });

@@ -38,10 +38,24 @@ export function aiqBekarReduce(value: number, max: number): number {
  * Escolha fixa, mostrada na tela, para o resultado ser reproduzível.
  */
 export const LATIN_TO_HEBREW: Record<string, string> = {
+  // Dígrafos primeiro: valem uma letra hebraica só
+  TH: 'ת', SH: 'ש', CH: 'ח', PH: 'פ', TZ: 'צ', TS: 'צ', KH: 'כ',
   A: 'א', B: 'ב', C: 'כ', D: 'ד', E: 'ה', F: 'פ', G: 'ג', H: 'ה', I: 'י', J: 'י',
-  K: 'כ', L: 'ל', M: 'מ', N: 'נ', O: 'ע', P: 'פ', Q: 'ק', R: 'ר', S: 'ס', T: 'ת',
+  K: 'כ', L: 'ל', M: 'מ', N: 'נ', O: 'ע', P: 'פ', Q: 'ק', R: 'ר', S: 'ס', T: 'ט',
   U: 'ו', V: 'ו', W: 'ו', X: 'צ', Y: 'י', Z: 'ז',
 };
+
+/** Divide o texto em unidades de transliteração (dígrafos como TH contam como uma). */
+export function latinTokens(text: string): string[] {
+  const letters = latinLetters(text);
+  const out: string[] = [];
+  for (let i = 0; i < letters.length; i++) {
+    const pair = letters[i] + (letters[i + 1] ?? '');
+    if (pair.length === 2 && LATIN_TO_HEBREW[pair]) { out.push(pair); i++; }
+    else out.push(letters[i]);
+  }
+  return out;
+}
 
 /** Letras latinas maiúsculas sem acento (Ç → C, Ã → A…), só A–Z. */
 export function latinLetters(text: string): string[] {

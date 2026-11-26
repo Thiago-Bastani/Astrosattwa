@@ -1,5 +1,5 @@
 import { type Kamea, cellOf } from './kameas';
-import { HEBREW_VALUES, LATIN_TO_HEBREW, aiqBekarReduce, hebrewLetters, latinLetters } from './hebrew';
+import { HEBREW_VALUES, LATIN_TO_HEBREW, aiqBekarReduce, hebrewLetters, latinLetters, latinTokens } from './hebrew';
 
 /**
  * Criador de sigilos: o texto vira uma sequência de números, cada número é uma casa
@@ -10,7 +10,7 @@ export type SigilMethod = 'aiqbekar' | 'hebrew' | 'pythagorean' | 'sequential';
 
 export const SIGIL_METHODS: { id: SigilMethod; name: string; hint: string }[] = [
   { id: 'aiqbekar', name: 'Aiq Bekar',
-    hint: 'Letras latinas viram hebraicas (tabela abaixo); o valor que não cabe no quadrado desce de câmara (200 → 20 → 2).' },
+    hint: 'Letras latinas viram hebraicas (tabela abaixo; TH, SH, CH, PH, TZ/TS e KH contam como uma letra); o valor que não cabe no quadrado desce de câmara (200 → 20 → 2).' },
   { id: 'hebrew', name: 'Hebraico direto',
     hint: 'Digite em hebraico. Gematria padrão (finais = normais) e redução Aiq Bekar.' },
   { id: 'pythagorean', name: 'Pitagórica 1–9',
@@ -51,6 +51,7 @@ export function buildSigil(text: string, kamea: Kamea, method: SigilMethod, cutR
   const max = kamea.order * kamea.order;
   let letters: string[];
   if (method === 'hebrew') letters = hebrewLetters(text);
+  else if (method === 'aiqbekar') letters = latinTokens(text);
   else letters = latinLetters(text);
 
   let dropped: string[] = [];
