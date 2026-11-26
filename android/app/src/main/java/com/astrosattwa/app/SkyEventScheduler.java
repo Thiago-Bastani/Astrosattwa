@@ -32,8 +32,17 @@ public final class SkyEventScheduler {
     private static final String PREFS = "sky_events";
     private static final String KEY_EVENTS = "events";
     private static final String KEY_WATERMARK = "notifiedUntil";
-    /** Aparelho desligado/sem alarme: não despeja avisos mais velhos que isto. */
-    private static final long MAX_LATE_MS = 60 * 60 * 1000L;
+    /**
+     * Aparelho desligado/em Doze: não despeja avisos mais velhos que isto.
+     * Alarme inexato atrasa bastante; o aviso mostra o horário real do evento (setWhen).
+     */
+    private static final long MAX_LATE_MS = 6 * 60 * 60 * 1000L;
+    /**
+     * Sem permissão de alarme exato o Android atrasa o alarme em até ~75% da distância
+     * até ele. Então nunca armamos mais longe que isto: o alarme acorda, confere e rearma,
+     * e o atraso máximo fica em poucos minutos.
+     */
+    private static final long MAX_HOP_MS = 15 * 60 * 1000L;
     private static final int REQUEST_CODE = 1;
 
     private SkyEventScheduler() {}
@@ -66,7 +75,7 @@ public final class SkyEventScheduler {
         }
         if (now > watermark) p.edit().putLong(KEY_WATERMARK, now).apply();
 
-        if (next > 0) armAlarm(ctx, next);
+        if (next > 0) armAlarm(ctx, exactAllowed(ctx) ? next : Math.min(next, now + MAX_HOP_MS));
         else cancelAlarm(ctx);
     }
 
@@ -122,13 +131,18 @@ public final class SkyEventScheduler {
                 ctx, REQUEST_CODE, i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
 
+    private static boolean exactAllowed(Context ctx) {
+        if (Build.VERSION.SDK_INT < 31) return true;
+        AlarmManager am = (AlarmManager) ctx.getSystemService(Context.ALARM_SERVICE);
+        return am != null && am.canScheduleExactAlarms();
+    }
+
     private static void armAlarm(Context ctx, long at) {
         AlarmManager am = (AlarmManager) ctx.getSystemService(Context.ALARM_SERVICE);
         if (am == null) return;
         PendingIntent pi = alarmIntent(ctx);
         try {
-            boolean exact = Build.VERSION.SDK_INT < 31 || am.canScheduleExactAlarms();
-            if (exact) am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pi);
+            if (exactAllowed(ctx)) am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pi);
             else am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pi);
         } catch (SecurityException e) {
             am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pi);

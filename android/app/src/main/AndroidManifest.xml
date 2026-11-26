@@ -51,6 +51,8 @@
     <!-- Notificação contínua -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Avisos de mudança do céu no minuto certo (Android 12/13 concede por padrão; 14+ só se o usuário liberar) -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <!-- Localização aproximada (o app pede só a aproximada; a precisa é exigida na declaração pelo plugin) -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />

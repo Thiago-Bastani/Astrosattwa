@@ -63,6 +63,25 @@ ${[...g.rings.map(d => p(d, g.ringWidth)), ...g.chart.map(d => p(d, g.chartWidth
 `;
 }
 
+/**
+ * Ícone pequeno das notificações (barra de status, 24dp, branco sobre transparente).
+ * Mesma geometria do logo, preenchendo o quadro, com traços engrossados para ler em 24dp.
+ */
+function statVector() {
+  const g = geometry(24, 11.2);
+  const p = (d, sw) => `    <path\n        android:pathData="${d}"\n        android:strokeColor="#FFFFFFFF"\n        android:strokeWidth="${sw}"\n        android:strokeLineJoin="round"\n        android:strokeLineCap="round" />`;
+  return `<?xml version="1.0" encoding="utf-8"?>
+<!-- Gerado por scripts/generate-brand-assets.mjs (ícone das notificações) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+${[...g.rings.map(d => p(d, 1.15)), ...g.chart.map(d => p(d, 0.95))].join('\n')}
+</vector>
+`;
+}
+
 const write = (file, text) => { fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, text); };
 const png = (file, w, h, R, opts) => sharp(Buffer.from(svg(w, h, R, opts))).png().toFile(file);
 
@@ -70,6 +89,7 @@ const png = (file, w, h, R, opts) => sharp(Buffer.from(svg(w, h, R, opts))).png(
 write(`${RES}/drawable/ic_logo_mark.xml`, vector(31));
 write(`${RES}/drawable/ic_logo_mono.xml`, vector(31, '#ffffff'));
 write(`${RES}/drawable/splash_icon.xml`, vector(34));
+write(`${RES}/drawable/ic_stat_sky.xml`, statVector());
 const adaptive = `<?xml version="1.0" encoding="utf-8"?>
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@color/logo_background" />
